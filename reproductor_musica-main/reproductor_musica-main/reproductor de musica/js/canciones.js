@@ -44,3 +44,4 @@ const albums = [
 ];
 
 export default albums;
+audio.preload = "auto"; 
