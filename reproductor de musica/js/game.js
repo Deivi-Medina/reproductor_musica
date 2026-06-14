@@ -15,8 +15,10 @@ let previousQueue = null;
 let previousQueueIndex = null;
 let audioCtx = null;
 
-// Elementos DOM
 let gameCover, gameScore, gameOptionsContainer, gameNextBtn, gameMessage, gamePlayingIndicator;
+
+// Control de promesa de reproducción activa
+let currentPlayPromise = null;
 
 export function initGameDOM() {
   gameCover = document.getElementById("gameCover");
@@ -26,15 +28,11 @@ export function initGameDOM() {
   gameMessage = document.getElementById("gameMessage");
   gamePlayingIndicator = document.getElementById("gamePlayingIndicator");
 
-  // Añadir el event listener al botón "Siguiente" (SOLO UNA VEZ)
   if (gameNextBtn) {
-    gameNextBtn.addEventListener("click", () => {
-      nextRound();
-    });
+    gameNextBtn.addEventListener("click", () => nextRound());
   }
 }
 
-// Sonido breve (beep) usando Web Audio
 function playBeep(type) {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -53,7 +51,6 @@ function playBeep(type) {
   osc.stop(now + 0.3);
 }
 
-// Confeti
 function launchConfetti() {
   if (typeof confetti === "function") {
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ["#a855f7", "#c084fc", "#e0b0ff"] });
@@ -84,11 +81,10 @@ export function stopGame() {
   }
 }
 
-function loadNewRound() {
-  // Fade out del contenedor (opcional)
+async function loadNewRound() {
   const container = document.querySelector(".game-container");
   if (container) container.style.opacity = "0";
-  setTimeout(() => {
+  setTimeout(async () => {
     if (gameMessage) {
       gameMessage.innerText = "";
       gameMessage.className = "";
@@ -142,7 +138,7 @@ function loadNewRound() {
     }
 
     renderOptions();
-    playFragment();
+    await playFragment();
 
     if (container) container.style.opacity = "1";
   }, 200);
@@ -160,26 +156,59 @@ function renderOptions() {
   });
 }
 
-function playFragment() {
+async function playFragment() {
+  // Cancelar promesa anterior si existe
+  if (currentPlayPromise) {
+    audio.pause();
+    try {
+      await currentPlayPromise;
+    } catch (e) {}
+    currentPlayPromise = null;
+  }
+
   audio.pause();
   audio.removeEventListener("timeupdate", stopFragment);
   audio.src = currentGameSong.file;
   audio.currentTime = 0;
-  audio.play().catch((err) => console.warn("Error al reproducir fragmento:", err));
-  if (gamePlayingIndicator) gamePlayingIndicator.style.display = "flex";
-  fragmentTimeout = setTimeout(() => {
-    if (!audio.paused) audio.pause();
+
+  try {
+    currentPlayPromise = audio.play();
+    await currentPlayPromise;
+    currentPlayPromise = null;
+    if (gamePlayingIndicator) gamePlayingIndicator.style.display = "flex";
+
+    if (fragmentTimeout) clearTimeout(fragmentTimeout);
+    fragmentTimeout = setTimeout(() => {
+      if (!audio.paused) audio.pause();
+      if (gamePlayingIndicator) gamePlayingIndicator.style.display = "none";
+    }, 10000);
+    audio.addEventListener("timeupdate", stopFragment);
+  } catch (err) {
+    console.warn("Error al reproducir fragmento:", err);
+    currentPlayPromise = null;
     if (gamePlayingIndicator) gamePlayingIndicator.style.display = "none";
-  }, 10000);
-  audio.addEventListener("timeupdate", stopFragment);
+  }
 }
 
 function stopFragment() {
   if (audio.currentTime >= 10) {
-    audio.pause();
-    if (fragmentTimeout) clearTimeout(fragmentTimeout);
-    if (gamePlayingIndicator) gamePlayingIndicator.style.display = "none";
-    audio.removeEventListener("timeupdate", stopFragment);
+    // Si hay una promesa activa, esperar antes de pausar
+    if (currentPlayPromise) {
+      currentPlayPromise
+        .then(() => {
+          audio.pause();
+          cleanup();
+        })
+        .catch(() => cleanup());
+    } else {
+      audio.pause();
+      cleanup();
+    }
+    function cleanup() {
+      if (fragmentTimeout) clearTimeout(fragmentTimeout);
+      if (gamePlayingIndicator) gamePlayingIndicator.style.display = "none";
+      audio.removeEventListener("timeupdate", stopFragment);
+    }
   }
 }
 
@@ -210,7 +239,6 @@ function checkAnswer(btn, selected) {
       gameMessage.classList.add("incorrect-msg");
     }
     playBeep("wrong");
-    // Vibración sutil en el botón
     btn.style.transform = "translateX(4px)";
     setTimeout(() => {
       btn.style.transform = "";

@@ -6,6 +6,7 @@ import albums from "./canciones.js";
 
 export let audio = new Audio();
 audio.crossOrigin = "anonymous";
+audio.preload = "auto"; // mejora la precarga
 
 let audioCtx = null;
 let audioSource = null;
@@ -20,37 +21,67 @@ export let isShuffleActive = false;
 export let isRepeatActive = false;
 let pistaContabilizada = false;
 
+// Para controlar promesas de reproducción activas
+let currentPlayPromise = null;
+
 export function setQueue(newQueue, newIndex = 0) {
   queue = newQueue;
   queueIndex = newIndex;
 }
 
-export function playActiveSong() {
+export async function playActiveSong() {
   if (queue.length === 0) return;
   const song = queue[queueIndex];
   prepareAudio();
+
+  // Cancelar cualquier reproducción pendiente anterior
+  if (currentPlayPromise) {
+    audio.pause();
+    try {
+      await currentPlayPromise;
+    } catch (e) {}
+    currentPlayPromise = null;
+  }
+
   audio.src = song.file;
   pistaContabilizada = false;
-  audio
-    .play()
-    .then(() => {
-      isPlaying = true;
-      updatePlayingUIs(true);
-    })
-    .catch(console.error);
+  try {
+    currentPlayPromise = audio.play();
+    await currentPlayPromise;
+    isPlaying = true;
+    updatePlayingUIs(true);
+  } catch (err) {
+    console.warn("Error al reproducir:", err);
+  } finally {
+    currentPlayPromise = null;
+  }
 }
 
-export function togglePlayPause() {
+export async function togglePlayPause() {
   if (queue.length === 0) return;
   prepareAudio();
+
   if (isPlaying) {
     audio.pause();
     isPlaying = false;
     updatePlayingUIs(false);
   } else {
-    audio.play().catch(console.error);
-    isPlaying = true;
-    updatePlayingUIs(true);
+    try {
+      if (currentPlayPromise) {
+        try {
+          await currentPlayPromise;
+        } catch (e) {}
+        currentPlayPromise = null;
+      }
+      currentPlayPromise = audio.play();
+      await currentPlayPromise;
+      isPlaying = true;
+      updatePlayingUIs(true);
+    } catch (err) {
+      console.warn("Error al reanudar:", err);
+    } finally {
+      currentPlayPromise = null;
+    }
   }
 }
 
@@ -91,7 +122,7 @@ export function toggleFavoriteStatus() {
   if (idx > -1) state.favorites.splice(idx, 1);
   else state.favorites.push(currentSong);
   saveState();
-  updatePlayingUIs(isPlaying); // solo actualiza UI (corazón) sin cambiar reproducción
+  updatePlayingUIs(isPlaying);
 }
 
 function registrarReproduccionArtista(track) {

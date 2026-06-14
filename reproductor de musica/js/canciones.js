@@ -1,5 +1,4 @@
 // js/canciones.js
-
 const albums = [
   {
     title: "A Hard Day's Night",
@@ -7,8 +6,8 @@ const albums = [
     cover: "https://i.ytimg.com/vi/5en2JMLA8Z0/maxresdefault.jpg",
     genre: "Rock 'n' Roll",
     songs: [
-      { trackTitle: "And I Love Her", file: "audios/AHDN/AndiLoveHer.mp3", genre: "Rock Ballad" },
-      { trackTitle: "If I Fell", file: "audios/AHDN/IfiFell.mp3", genre: "Rock" },
+      { trackTitle: "And I Love Her", file: "audios/AHDN/AndILoveHer.mp3", genre: "Rock Ballad" },
+      { trackTitle: "If I Fell", file: "audios/AHDN/IfIFell.mp3", genre: "Rock" },
     ],
   },
   {
@@ -18,7 +17,7 @@ const albums = [
     genre: "Progressive Rock",
     songs: [
       { trackTitle: "Money", file: "audios/TDSOTM/money.mp3", genre: "Rock / Blues" },
-      { trackTitle: "Time", file: "audios/TDSOTM/time.mp3", genre: "Rock" },
+      { trackTitle: "Time", file: "audios/TDSOTM/Time.mp3", genre: "Rock" },
     ],
   },
   {
