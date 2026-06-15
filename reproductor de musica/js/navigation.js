@@ -18,11 +18,12 @@ export function showSection(section) {
   if (DOM.sidebar.navGame) DOM.sidebar.navGame.classList.remove("active");
   document.querySelectorAll(".playlist-link").forEach((l) => l.classList.remove("active"));
 
-  // Ocultar todas las vistas principales
+  // Ocultar TODAS las vistas principales (incluyendo la del artista)
   if (DOM.views.library) DOM.views.library.classList.add("hidden");
   if (DOM.views.albumDetail) DOM.views.albumDetail.classList.add("hidden");
   if (DOM.views.diary) DOM.views.diary.classList.add("hidden");
-  if (DOM.views.game) DOM.views.game.classList.add("hidden"); // ✅ ahora sí existe
+  if (DOM.views.game) DOM.views.game.classList.add("hidden");
+  if (DOM.views.artistProfile) DOM.views.artistProfile.classList.add("hidden");
 
   // Detener juego si se sale de la vista
   if (previousSection === "game" && section !== "game") {
@@ -56,5 +57,9 @@ export function showSection(section) {
     if (targetElement) targetElement.classList.add("active");
     if (DOM.views.albumDetail) DOM.views.albumDetail.classList.remove("hidden");
     renderPlaylistDetailView(playlistName);
+  } else if (section.startsWith("artist:")) {
+    if (DOM.views.artistProfile) {
+      DOM.views.artistProfile.classList.remove("hidden");
+    }
   }
 }

@@ -36,6 +36,7 @@ import { initKeyboardControls } from "./keyboard.js";
 import { initReviewsSystem, updateDiarySongsSelector, renderIntegratedDiaryFeed } from "./reviews.js";
 import { showSection } from "./navigation.js";
 import { initGameDOM, startGame, stopGame, nextRound } from "./game.js";
+import { openArtistProfile } from "./artists.js";
 
 // Funciones de carga inicial
 function loadCustomAlbums() {
@@ -218,7 +219,8 @@ function initApp() {
   window.closeAlbumView = closeAlbumView;
   window.renderPlaylistsSidebarLinks = renderPlaylistsSidebarLinks;
   window.renderAlbumCards = renderAlbumCards;
-  window.nextRound = nextRound; // Para el botón "Siguiente canción"
+  window.nextRound = nextRound;
+  window.openArtistProfile = openArtistProfile;
 
   // Inicializar sistema de reseñas
   initReviewsSystem(

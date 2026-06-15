@@ -5,6 +5,7 @@ import { queue, queueIndex, playActiveSong, setQueue } from "./audio.js";
 import { renderReviews } from "./reviews.js";
 import { showSection } from "./navigation.js";
 import { showAlert } from "./modals.js";
+import { openArtistProfile } from "./artists.js";
 
 let contextMenuSong = null;
 
@@ -31,13 +32,29 @@ export function renderAlbumCards(query = "") {
       </div>
       <div class="card-info">
         <h3>${album.title}</h3>
-        <p>${album.artist}</p>
+        <p class="artist-name" style="cursor:pointer; display:inline-block; color:var(--text-secondary); transition:color 0.2s;">${album.artist}</p>
       </div>
     `;
+
+    // Evento click para el nombre del artista (sí se mantiene, es parte de la biblioteca)
+    const artistP = card.querySelector(".artist-name");
+    artistP.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openArtistProfile(album.artist);
+    });
+    artistP.addEventListener("mouseenter", () => {
+      artistP.style.color = "var(--text-primary)";
+    });
+    artistP.addEventListener("mouseleave", () => {
+      artistP.style.color = "var(--text-secondary)";
+    });
+
     card.addEventListener("click", (e) => {
       if (e.target.closest(".play-hint")) return;
+      if (e.target.classList.contains("artist-name")) return;
       openAlbumView(idx);
     });
+
     const playBtn = card.querySelector(".play-hint");
     if (playBtn) {
       playBtn.addEventListener("click", (e) => {
@@ -109,6 +126,9 @@ export function renderAlbumCards(query = "") {
 }
 
 export function openAlbumView(idx) {
+  // Ocultar el perfil de artista si está visible
+  if (DOM.views.artistProfile) DOM.views.artistProfile.classList.add("hidden");
+
   state.activeAlbumIndex = idx;
   state.activePlaylistName = null;
   state.currentSection = "home";
@@ -119,7 +139,24 @@ export function openAlbumView(idx) {
   const album = albums[idx];
   if (DOM.currentAlbumDetail.cover) DOM.currentAlbumDetail.cover.src = album.cover;
   if (DOM.currentAlbumDetail.title) DOM.currentAlbumDetail.title.innerText = album.title;
-  if (DOM.currentAlbumDetail.artist) DOM.currentAlbumDetail.artist.innerText = album.artist;
+
+  // Artista clickeable en detalle de álbum (mantenemos, forma parte de la navegación)
+  if (DOM.currentAlbumDetail.artist) {
+    const artistSpan = document.createElement("span");
+    artistSpan.className = "artist-clickable";
+    artistSpan.textContent = album.artist;
+    artistSpan.style.cursor = "pointer";
+    artistSpan.style.color = "var(--text-secondary)";
+    artistSpan.style.transition = "color 0.2s";
+    artistSpan.addEventListener("mouseenter", () => (artistSpan.style.color = "var(--text-primary)"));
+    artistSpan.addEventListener("mouseleave", () => (artistSpan.style.color = "var(--text-secondary)"));
+    artistSpan.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openArtistProfile(album.artist);
+    });
+    DOM.currentAlbumDetail.artist.innerHTML = "";
+    DOM.currentAlbumDetail.artist.appendChild(artistSpan);
+  }
 
   if (DOM.albumActions.row) DOM.albumActions.row.style.display = album.title === "Mis Archivos Importados" ? "none" : "flex";
   if (DOM.albumActions.btnEdit)
@@ -407,10 +444,19 @@ export function updatePlayingUIs(playing) {
   if (DOM.miniPlayer.container) DOM.miniPlayer.container.classList.remove("hidden");
   if (DOM.miniPlayer.cover) DOM.miniPlayer.cover.src = song.albumCover;
   if (DOM.miniPlayer.title) DOM.miniPlayer.title.innerText = song.trackTitle;
-  if (DOM.miniPlayer.artist) DOM.miniPlayer.artist.innerText = song.artistName;
+
+  // Texto plano para el artista en el mini reproductor (sin clic)
+  if (DOM.miniPlayer.artist) {
+    DOM.miniPlayer.artist.innerText = song.artistName;
+  }
+
   if (DOM.fullPlayer.cover) DOM.fullPlayer.cover.src = song.albumCover;
   if (DOM.fullPlayer.title) DOM.fullPlayer.title.innerText = song.trackTitle;
-  if (DOM.fullPlayer.artist) DOM.fullPlayer.artist.innerText = song.artistName;
+
+  // Texto plano para el artista en el reproductor de pantalla completa (sin clic)
+  if (DOM.fullPlayer.artist) {
+    DOM.fullPlayer.artist.innerText = song.artistName;
+  }
 
   if (playing) {
     if (DOM.audioControls.btnPlay) DOM.audioControls.btnPlay.innerHTML = `<i data-lucide="pause"></i>`;

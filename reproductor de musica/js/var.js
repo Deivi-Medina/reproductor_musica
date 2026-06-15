@@ -21,6 +21,7 @@ const DOM = {
     albumGrid: document.getElementById("albumGrid"),
     header: document.getElementById("globalHeader"),
     searchBar: document.getElementById("globalSearch"),
+    artistProfile: document.getElementById("artistProfileView"),
   },
 
   currentAlbumDetail: {
@@ -145,6 +146,8 @@ const DOM = {
     nextBtn: document.getElementById("gameNextBtn"),
     message: document.getElementById("gameMessage"),
     playingIndicator: document.getElementById("gamePlayingIndicator"),
+
+    //artistas
   },
 };
 
