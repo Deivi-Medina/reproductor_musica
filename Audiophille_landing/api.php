@@ -450,26 +450,41 @@ function getReviews($pdo, $user_id)
     $stmt->execute([$user_id]);
     sendJson(['success' => true, 'reviews' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
 }
-
 function importSong($pdo, $user_id, $files)
 {
     if (!isset($files['audio']) || $files['audio']['error'] !== UPLOAD_ERR_OK) {
         sendJson(['success' => false, 'message' => 'No se recibió archivo']);
     }
+
     $uploadDir = __DIR__ . '/uploads/audios/';
     if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-    $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($files['audio']['name']));
+
+    // Limpiar nombre de archivo
+    $originalName = basename($files['audio']['name']);
+    $cleanName = preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
+    $filename = time() . '_' . $cleanName;
+
     $target = $uploadDir . $filename;
+
     if (move_uploaded_file($files['audio']['tmp_name'], $target)) {
-        $titulo = pathinfo($files['audio']['name'], PATHINFO_FILENAME);
+        $titulo = pathinfo($originalName, PATHINFO_FILENAME);
+
+        // ✅ GUARDAR RUTA RELATIVA (NO ABSOLUTA)
+        $relativePath = 'uploads/audios/' . $filename;
+
         $stmt = $pdo->prepare("INSERT INTO canciones (titulo, archivo_url, es_sistema, id_usuario_subio) VALUES (?, ?, 0, ?)");
-        $stmt->execute([$titulo, $target, $user_id]);
-        sendJson(['success' => true, 'id_cancion' => $pdo->lastInsertId(), 'titulo' => $titulo, 'url' => $target]);
+        $stmt->execute([$titulo, $relativePath, $user_id]);
+
+        sendJson([
+            'success' => true,
+            'id_cancion' => $pdo->lastInsertId(),
+            'titulo' => $titulo,
+            'url' => $relativePath
+        ]);
     } else {
         sendJson(['success' => false, 'message' => 'Error al guardar archivo']);
     }
 }
-
 function updateEq($pdo, $user_id, $data)
 {
     $bass = intval($data['bass'] ?? 0);

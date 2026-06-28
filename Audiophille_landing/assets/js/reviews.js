@@ -1,7 +1,7 @@
 // js/reviews.js
 import { showAlert, showConfirm } from "./modals.js";
+import { getReviews, saveReview, deleteReview, updateReview, getTopArtist } from "./services/reviewService.js";
 
-// ================== VARIABLES GLOBALES ==================
 let reviews = [];
 let currentRating = 5;
 let currentIntegratedRating = 5;
@@ -18,11 +18,9 @@ let isEditingRewatchActive = false;
 let getPlayingTrackGlobal = null;
 let getAllTracksInLibraryGlobal = null;
 
-// ================== FUNCIONES DE API ==================
 export async function loadReviewsFromAPI() {
   try {
-    const res = await fetch(`${window.baseUrl}api.php?action=get_reviews`);
-    const data = await res.json();
+    const data = await getReviews();
     if (data.success) {
       reviews = data.reviews.map((r) => ({
         id_review: r.id_review,
@@ -45,17 +43,8 @@ export async function loadReviewsFromAPI() {
 }
 
 async function saveReviewToAPI(trackTitle, artistName, albumCover, rating, text, rewatch, id_cancion) {
-  const formData = new FormData();
-  formData.append("action", "save_review");
-  formData.append("id_cancion", id_cancion);
-  formData.append("puntuacion", rating);
-  formData.append("comentario", text);
-  formData.append("rewatch", rewatch ? "1" : "0");
-  formData.append("titulo_texto", trackTitle);
-  formData.append("artista_texto", artistName);
   try {
-    const response = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-    const data = await response.json();
+    const data = await saveReview(id_cancion, rating, text, rewatch, trackTitle, artistName);
     if (data.success) {
       await loadReviewsFromAPI();
       window.reviews = reviews;
@@ -72,12 +61,8 @@ async function saveReviewToAPI(trackTitle, artistName, albumCover, rating, text,
 }
 
 async function deleteReviewFromAPI(id_review) {
-  const formData = new FormData();
-  formData.append("action", "delete_review");
-  formData.append("id_review", id_review);
   try {
-    const response = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-    const data = await response.json();
+    const data = await deleteReview(id_review);
     if (data.success) {
       await loadReviewsFromAPI();
       window.reviews = reviews;
@@ -91,15 +76,8 @@ async function deleteReviewFromAPI(id_review) {
 }
 
 async function updateReviewInAPI(id_review, rating, text, rewatch) {
-  const formData = new FormData();
-  formData.append("action", "update_review");
-  formData.append("id_review", id_review);
-  formData.append("puntuacion", rating);
-  formData.append("comentario", text);
-  formData.append("rewatch", rewatch ? "1" : "0");
   try {
-    const response = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-    const data = await response.json();
+    const data = await updateReview(id_review, rating, text, rewatch);
     if (data.success) {
       await loadReviewsFromAPI();
       window.reviews = reviews;
@@ -112,16 +90,13 @@ async function updateReviewInAPI(id_review, rating, text, rewatch) {
   }
 }
 
-// ================== ACTUALIZACIÓN DE ESTADÍSTICAS ==================
 function updateStateStats() {
   const totalEl = document.getElementById("statTotalReviews");
   const avgEl = document.getElementById("statAvgRating");
   const favArtistEl = document.getElementById("statFavArtist");
 
-  // Total de reseñas
   if (totalEl) totalEl.innerText = reviews.length;
 
-  // Calificación media
   if (avgEl) {
     if (reviews.length === 0) {
       avgEl.innerText = "0.0 ★";
@@ -129,7 +104,7 @@ function updateStateStats() {
       let sum = 0;
       let validCount = 0;
       reviews.forEach((r) => {
-        let rating = Number(r.rating);
+        const rating = Number(r.rating);
         if (!isNaN(rating)) {
           sum += rating;
           validCount++;
@@ -140,14 +115,12 @@ function updateStateStats() {
     }
   }
 
-  // Artista favorito (mejor algoritmo)
   if (favArtistEl) {
     if (reviews.length === 0) {
       favArtistEl.innerText = "Ninguno";
       return;
     }
 
-    // 1. Contar reseñas por artista
     const artistStats = {};
     reviews.forEach((r) => {
       const art = r.artistName || "Desconocido";
@@ -159,16 +132,12 @@ function updateStateStats() {
       artistStats[art].ratings.push(Number(r.rating) || 0);
     });
 
-    // 2. Calcular puntuación para cada artista
     let bestArtist = "Ninguno";
     let bestScore = -1;
 
     for (const [artist, stats] of Object.entries(artistStats)) {
       const avgRating = stats.totalRating / stats.count;
-      // Puntuación = (cantidad * 2) + (promedio * 3)
-      // Prioriza cantidad, pero la calidad también importa
       const score = stats.count * 2 + avgRating * 3;
-
       if (score > bestScore) {
         bestScore = score;
         bestArtist = artist;
@@ -178,7 +147,7 @@ function updateStateStats() {
     favArtistEl.innerText = bestArtist;
   }
 }
-// ================== FUNCIONES DE ESTRELLAS (INTERACTIVAS) ==================
+
 function applyStarHoverEffect(starElement) {
   if (!starElement) return;
   starElement.addEventListener("mouseenter", () => {
@@ -271,7 +240,6 @@ function highlightEditStars(rating) {
   setupStarHoverEffects(starContainer);
 }
 
-// ================== UTILIDADES GENERALES ==================
 function generarEstrellas(rating, rewatch) {
   let starsHTML = "";
   const fullStars = Math.floor(rating);
@@ -327,7 +295,7 @@ export function selectTrackInComposerDropdown(trackTitle) {
         selectEl.selectedIndex = i;
         break;
       }
-    } catch (e) {}
+    } catch (_) {}
   }
 }
 
@@ -356,7 +324,6 @@ export function updateDiarySongsSelector() {
   });
 }
 
-// ================== RENDERIZADO PRINCIPAL ==================
 export function renderIntegratedDiaryFeed() {
   updateStateStats();
   const container = document.getElementById("integratedDiaryList");
@@ -509,7 +476,6 @@ export function renderReviews(playingTrack) {
   if (sidebarStars) setupStarHoverEffects(sidebarStars);
 }
 
-// ================== INICIALIZACIÓN PRINCIPAL ==================
 export async function initReviewsSystem(getPlayingTrackFn, getAllTracksInLibraryFn) {
   getPlayingTrackGlobal = getPlayingTrackFn;
   getAllTracksInLibraryGlobal = getAllTracksInLibraryFn;
@@ -517,7 +483,6 @@ export async function initReviewsSystem(getPlayingTrackFn, getAllTracksInLibrary
   await loadReviewsFromAPI();
   window.reviews = reviews;
 
-  // --- ELEMENTOS DE LA BARRA LATERAL (si existen) ---
   const btnToggleReviews = document.getElementById("btnToggleReviews");
   const reviewsSidebar = document.getElementById("reviewsSidebar");
   const queueSidebar = document.getElementById("queueSidebar");
@@ -585,7 +550,6 @@ export async function initReviewsSystem(getPlayingTrackFn, getAllTracksInLibrary
   }
   highlightStars(5);
 
-  // --- SISTEMA INTEGRADO DEL DIARIO ---
   const integratedStarsContainer = document.getElementById("integratedRatingStars");
   const btnSaveIntegratedReview = document.getElementById("btnSaveIntegratedReview");
   const integratedReviewText = document.getElementById("integratedReviewText");
@@ -673,7 +637,6 @@ export async function initReviewsSystem(getPlayingTrackFn, getAllTracksInLibrary
       renderIntegratedDiaryFeed();
     });
 
-  // --- MODAL DE EDICIÓN DE RESEÑA ---
   const editReviewModal = document.getElementById("editReviewModal");
   const btnEditReviewClose = document.getElementById("btnEditReviewClose");
   const btnEditReviewCancel = document.getElementById("btnEditReviewCancel");
@@ -740,13 +703,9 @@ export async function initReviewsSystem(getPlayingTrackFn, getAllTracksInLibrary
     if (editReviewModal) editReviewModal.classList.remove("hidden");
   };
 
-  // ================== FUNCIÓN CORREGIDA CON CREDENTIALS ==================
   window.obtenerArtistaMasEscuchadoYValorado = async function () {
     try {
-      const res = await fetch(`${window.baseUrl}api.php?action=get_top_artist`, {
-        credentials: "same-origin",
-      });
-      const data = await res.json();
+      const data = await getTopArtist();
       if (data.success) {
         return {
           artista: data.artista,
@@ -760,11 +719,10 @@ export async function initReviewsSystem(getPlayingTrackFn, getAllTracksInLibrary
     }
     return { artista: "Ninguno todavía", puntuacion: 0, reproducciones: 0, ratingPromedio: 0 };
   };
-  // Render inicial
+
   renderReviews(getPlayingTrackGlobal());
   renderIntegratedDiaryFeed();
   highlightIntegratedStars(5);
 }
 
-// Al final de reviews.js
 window.reviews = reviews;

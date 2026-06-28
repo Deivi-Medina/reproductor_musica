@@ -1,17 +1,14 @@
 // assets/js/social/follow.js
+import {
+  toggleFollowUser as toggleFollowUserService,
+  getFollowers as getFollowersService,
+  getFollowing as getFollowingService,
+  isFollowing as isFollowingService,
+} from "../services/followService.js";
+
 export async function toggleFollowUser(userId, btnElement = null) {
   try {
-    const response = await fetch(`${window.baseUrl}api.php`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "toggle_follow_user",
-        user_id: userId,
-      }),
-      credentials: "include",
-    });
-
-    const data = await response.json();
+    const data = await toggleFollowUserService(userId);
 
     if (data.success) {
       if (btnElement) {
@@ -50,10 +47,7 @@ export function updateFollowButton(btn, isFollowing) {
 
 export async function getFollowers(userId) {
   try {
-    const response = await fetch(`${window.baseUrl}api.php?action=get_followers&user_id=${userId}`, {
-      credentials: "include",
-    });
-    const data = await response.json();
+    const data = await getFollowersService(userId);
     return data.success ? data.followers : [];
   } catch (error) {
     console.error("Error al obtener seguidores:", error);
@@ -63,10 +57,7 @@ export async function getFollowers(userId) {
 
 export async function getFollowing(userId) {
   try {
-    const response = await fetch(`${window.baseUrl}api.php?action=get_following&user_id=${userId}`, {
-      credentials: "include",
-    });
-    const data = await response.json();
+    const data = await getFollowingService(userId);
     return data.success ? data.following : [];
   } catch (error) {
     console.error("Error al obtener seguidos:", error);
@@ -74,12 +65,9 @@ export async function getFollowing(userId) {
   }
 }
 
-export async function isFollowing(currentUserId, targetUserId) {
+export async function isFollowing(userId) {
   try {
-    const response = await fetch(`${window.baseUrl}api.php?action=is_following&user_id=${targetUserId}`, {
-      credentials: "include",
-    });
-    const data = await response.json();
+    const data = await isFollowingService(userId);
     return data.success && data.is_following;
   } catch (error) {
     console.error("Error al verificar seguimiento:", error);

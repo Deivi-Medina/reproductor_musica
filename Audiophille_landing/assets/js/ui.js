@@ -5,25 +5,22 @@ import { renderReviews } from "./reviews.js";
 import { showSection } from "./navigation.js";
 import { showAlert } from "./modals.js";
 import { openArtistProfile } from "./artists.js";
+import { addSongToPlaylist } from "./services/playlistService.js";
 
 let contextMenuSong = null;
 
-// Función auxiliar para obtener todos los álbumes desde la variable global
 function getAlbums() {
   return window.albumsFromDB || [];
 }
 
-// Función para refrescar la interfaz después de cambios en playlists o favoritos
 async function refreshUI() {
-  await loadInitialData(); // Recarga window.albumsFromDB, state.playlists, state.favorites
-  renderAlbumCards(); // Refresca galería principal
-  // Si la vista actual es una playlist, volver a renderizarla
+  await loadInitialData();
+  renderAlbumCards();
   if (state.activePlaylistName) {
     renderPlaylistDetailView(state.activePlaylistName);
   }
 }
 
-// Obtener todas las canciones disponibles (álbumes del sistema + importadas)
 function getAllAvailableSongs() {
   const all = [];
   const albums = getAlbums();
@@ -41,7 +38,6 @@ function getAllAvailableSongs() {
       });
     }
   });
-  // Añadir canciones importadas por el usuario
   if (state.importedSongs && Array.isArray(state.importedSongs)) {
     state.importedSongs.forEach((song) => {
       all.push({
@@ -57,7 +53,6 @@ function getAllAvailableSongs() {
   return all;
 }
 
-// Renderizar tarjetas de álbumes y playlists en la vista principal
 export function renderAlbumCards(query = "") {
   if (!DOM.views.albumGrid) return;
   DOM.views.albumGrid.innerHTML = "";
@@ -72,19 +67,19 @@ export function renderAlbumCards(query = "") {
     const card = document.createElement("article");
     card.className = "album-card";
     card.innerHTML = `
-            <div class="card-media-wrapper">
-                <div class="card-media">
-                    <img src="${album.cover}" alt="${album.title}">
-                    <div class="play-hint"><i data-lucide="play"></i></div>
-                </div>
-                <div class="card-reflection"></div>
-                <span class="grid-card-tag tag-album">Álbum</span>
-            </div>
-            <div class="card-info">
-                <h3>${escapeHtml(album.title)}</h3>
-                <p class="artist-name" style="cursor:pointer; display:inline-block; color:var(--text-secondary); transition:color 0.2s;">${escapeHtml(album.artist)}</p>
-            </div>
-        `;
+      <div class="card-media-wrapper">
+        <div class="card-media">
+          <img src="${album.cover}" alt="${album.title}">
+          <div class="play-hint"><i data-lucide="play"></i></div>
+        </div>
+        <div class="card-reflection"></div>
+        <span class="grid-card-tag tag-album">Álbum</span>
+      </div>
+      <div class="card-info">
+        <h3>${escapeHtml(album.title)}</h3>
+        <p class="artist-name" style="cursor:pointer; display:inline-block; color:var(--text-secondary); transition:color 0.2s;">${escapeHtml(album.artist)}</p>
+      </div>
+    `;
 
     const artistP = card.querySelector(".artist-name");
     artistP.addEventListener("click", (e) => {
@@ -126,19 +121,19 @@ export function renderAlbumCards(query = "") {
       const card = document.createElement("article");
       card.className = "album-card";
       card.innerHTML = `
-                <div class="card-media-wrapper">
-                    <div class="card-media">
-                        <img src="${playlist.portada}" alt="${pName}">
-                        <div class="play-hint play-hint-purple"><i data-lucide="play"></i></div>
-                    </div>
-                    <div class="card-reflection"></div>
-                    <span class="grid-card-tag tag-playlist">Playlist</span>
-                </div>
-                <div class="card-info">
-                    <h3>${escapeHtml(pName)}</h3>
-                    <p>${playlist.canciones.length} canción(es)</p>
-                </div>
-            `;
+        <div class="card-media-wrapper">
+          <div class="card-media">
+            <img src="${playlist.portada}" alt="${pName}">
+            <div class="play-hint play-hint-purple"><i data-lucide="play"></i></div>
+          </div>
+          <div class="card-reflection"></div>
+          <span class="grid-card-tag tag-playlist">Playlist</span>
+        </div>
+        <div class="card-info">
+          <h3>${escapeHtml(pName)}</h3>
+          <p>${playlist.canciones.length} canción(es)</p>
+        </div>
+      `;
       card.addEventListener("click", (e) => {
         if (e.target.closest(".play-hint")) return;
         showSection(`playlist:${pName}`);
@@ -174,7 +169,6 @@ export function renderAlbumCards(query = "") {
   if (window.lucide) window.lucide.createIcons();
 }
 
-// Abrir vista de detalle de un álbum
 export function openAlbumView(idx) {
   if (DOM.views.artistProfile) DOM.views.artistProfile.classList.add("hidden");
 
@@ -209,11 +203,15 @@ export function openAlbumView(idx) {
     DOM.currentAlbumDetail.artist.appendChild(artistSpan);
   }
 
-  if (DOM.albumActions.row) DOM.albumActions.row.style.display = album.title === "Mis Archivos Importados" ? "none" : "flex";
-  if (DOM.albumActions.btnEdit)
+  if (DOM.albumActions.row) {
+    DOM.albumActions.row.style.display = album.title === "Mis Archivos Importados" ? "none" : "flex";
+  }
+  if (DOM.albumActions.btnEdit) {
     DOM.albumActions.btnEdit.innerHTML = `<i data-lucide="pencil" style="width:14px; height:14px;"></i> Editar Álbum`;
-  if (DOM.albumActions.btnDelete)
+  }
+  if (DOM.albumActions.btnDelete) {
     DOM.albumActions.btnDelete.innerHTML = `<i data-lucide="trash-2" style="width:14px; height:14px;"></i> Eliminar Álbum`;
+  }
 
   if (DOM.views.tracksList) DOM.views.tracksList.innerHTML = "";
   album.songs.forEach((song, songIdx) => {
@@ -221,12 +219,12 @@ export function openAlbumView(idx) {
     const row = document.createElement("div");
     row.className = `track-row ${activeClass}`;
     row.innerHTML = `
-            <span class="track-number">${songIdx + 1}</span>
-            <span class="track-title">${escapeHtml(song.trackTitle)}</span>
-            <span class="track-album-inside">${escapeHtml(album.title)}</span>
-            <span class="track-duration">--:--</span>
-            <button class="btn-track-actions"><i data-lucide="more-horizontal"></i></button>
-        `;
+      <span class="track-number">${songIdx + 1}</span>
+      <span class="track-title">${escapeHtml(song.trackTitle)}</span>
+      <span class="track-album-inside">${escapeHtml(album.title)}</span>
+      <span class="track-duration">--:--</span>
+      <button class="btn-track-actions"><i data-lucide="more-horizontal"></i></button>
+    `;
     row.addEventListener("click", () => playNewAlbumQueue(idx, songIdx));
     const btnActions = row.querySelector(".btn-track-actions");
     btnActions.addEventListener("click", (e) => {
@@ -286,8 +284,9 @@ export function renderTrackActiveStylings() {
 }
 
 export function renderFavoritesDetailView() {
-  if (DOM.currentAlbumDetail.cover)
+  if (DOM.currentAlbumDetail.cover) {
     DOM.currentAlbumDetail.cover.src = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400";
+  }
   if (DOM.currentAlbumDetail.title) DOM.currentAlbumDetail.title.innerText = "Mis Favoritos";
   if (DOM.currentAlbumDetail.artist) DOM.currentAlbumDetail.artist.innerText = "Tus canciones con corazones";
   if (DOM.views.tracksList) DOM.views.tracksList.innerHTML = "";
@@ -296,12 +295,12 @@ export function renderFavoritesDetailView() {
     const row = document.createElement("div");
     row.className = `track-row ${activeClass}`;
     row.innerHTML = `
-            <span class="track-number"><i data-lucide="heart" style="color:#ff2d55; width:14px; fill:#ff2d55;"></i></span>
-            <span class="track-title">${escapeHtml(song.trackTitle)}</span>
-            <span class="track-album-inside">${escapeHtml(song.artistName)}</span>
-            <span class="track-duration">--:--</span>
-            <button class="btn-track-actions"><i data-lucide="more-horizontal"></i></button>
-        `;
+      <span class="track-number"><i data-lucide="heart" style="color:#ff2d55; width:14px; fill:#ff2d55;"></i></span>
+      <span class="track-title">${escapeHtml(song.trackTitle)}</span>
+      <span class="track-album-inside">${escapeHtml(song.artistName)}</span>
+      <span class="track-duration">--:--</span>
+      <button class="btn-track-actions"><i data-lucide="more-horizontal"></i></button>
+    `;
     row.addEventListener("click", () => {
       setQueue([...state.favorites], songIdx);
       playActiveSong();
@@ -324,10 +323,12 @@ export function renderPlaylistDetailView(playlistName) {
   if (DOM.currentAlbumDetail.title) DOM.currentAlbumDetail.title.innerText = playlistName;
   if (DOM.currentAlbumDetail.artist) DOM.currentAlbumDetail.artist.innerText = "Playlist Personalizada";
   if (DOM.albumActions.row) DOM.albumActions.row.style.display = "flex";
-  if (DOM.albumActions.btnEdit)
+  if (DOM.albumActions.btnEdit) {
     DOM.albumActions.btnEdit.innerHTML = `<i data-lucide="pencil" style="width:14px; height:14px;"></i> Editar Playlist`;
-  if (DOM.albumActions.btnDelete)
+  }
+  if (DOM.albumActions.btnDelete) {
     DOM.albumActions.btnDelete.innerHTML = `<i data-lucide="trash-2" style="width:14px; height:14px;"></i> Eliminar Playlist`;
+  }
   if (DOM.extra.playlistInlineContainer) {
     DOM.extra.playlistInlineContainer.classList.remove("hidden");
     renderPlaylistAddSongInline(playlistName, DOM.extra.playlistInlineContainer);
@@ -338,12 +339,12 @@ export function renderPlaylistDetailView(playlistName) {
     const row = document.createElement("div");
     row.className = `track-row ${activeClass}`;
     row.innerHTML = `
-            <span class="track-number">${songIdx + 1}</span>
-            <span class="track-title">${escapeHtml(song.trackTitle)}</span>
-            <span class="track-album-inside">${escapeHtml(song.artistName)}</span>
-            <span class="track-duration">--:--</span>
-            <button class="btn-track-actions"><i data-lucide="more-horizontal"></i></button>
-        `;
+      <span class="track-number">${songIdx + 1}</span>
+      <span class="track-title">${escapeHtml(song.trackTitle)}</span>
+      <span class="track-album-inside">${escapeHtml(song.artistName)}</span>
+      <span class="track-duration">--:--</span>
+      <button class="btn-track-actions"><i data-lucide="more-horizontal"></i></button>
+    `;
     row.addEventListener("click", () => {
       setQueue([...playData.canciones], songIdx);
       playActiveSong();
@@ -359,7 +360,6 @@ export function renderPlaylistDetailView(playlistName) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-// Renderizar el componente para añadir canciones a una playlist (inline)
 function renderPlaylistAddSongInline(playlistName, container) {
   const allSongs = getAllAvailableSongs();
   const playlist = state.playlists[playlistName];
@@ -383,16 +383,22 @@ function renderPlaylistAddSongInline(playlistName, container) {
       : `<option value="" disabled selected>-- No hay más canciones disponibles en tu biblioteca --</option>`;
   const isBtnDisabled = uniqueAvailable.length === 0 ? "disabled style='opacity:0.5; cursor:not-allowed;'" : "";
   container.innerHTML = `
-        <div class="playlist-inline-adder">
-            <div class="adder-header">
-                <i data-lucide="plus-circle" class="adder-icon"></i>
-                <div><h4>Añadir Canción a la Playlist</h4><p>Agrega pistas de tu catálogo directamente a esta playlist</p></div>
-            </div>
-            <div class="adder-body">
-                <select id="inlineSongSelector" class="adder-select">${optionsHtml}</select>
-                <button id="btnInlineAddSong" class="btn-adder-add" ${isBtnDisabled}><i data-lucide="plus" style="width:14px; height:14px;"></i> Agregar Pista</button>
-            </div>
-        </div>`;
+    <div class="playlist-inline-adder">
+      <div class="adder-header">
+        <i data-lucide="plus-circle" class="adder-icon"></i>
+        <div>
+          <h4>Añadir Canción a la Playlist</h4>
+          <p>Agrega pistas de tu catálogo directamente a esta playlist</p>
+        </div>
+      </div>
+      <div class="adder-body">
+        <select id="inlineSongSelector" class="adder-select">${optionsHtml}</select>
+        <button id="btnInlineAddSong" class="btn-adder-add" ${isBtnDisabled}>
+          <i data-lucide="plus" style="width:14px; height:14px;"></i> Agregar Pista
+        </button>
+      </div>
+    </div>
+  `;
   const select = container.querySelector("#inlineSongSelector");
   const btn = container.querySelector("#btnInlineAddSong");
   if (btn && select && uniqueAvailable.length > 0) {
@@ -404,23 +410,11 @@ function renderPlaylistAddSongInline(playlistName, container) {
       }
       const item = uniqueAvailable[parseInt(val, 10)];
       if (item && item.id_cancion) {
-        // Llamar a la API para añadir la canción a la playlist
-        const formData = new FormData();
-        formData.append("action", "add_to_playlist");
-        formData.append("id_playlist", playlist.id_playlist);
-        formData.append("id_cancion", item.id_cancion);
         try {
-          const res = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-          const data = await res.json();
-          if (data.success) {
-            await refreshUI(); // Recargar datos y refrescar la vista
-            // Volver a mostrar la misma playlist
-            if (state.activePlaylistName === playlistName) {
-              renderPlaylistDetailView(playlistName);
-              await refreshUI(); // o loadInitialData() + renderPlaylistDetailView()
-            }
-          } else {
-            await showAlert(data.message || "Error al añadir la canción", "Error");
+          await addSongToPlaylist(playlist.id_playlist, item.id_cancion);
+          await refreshUI();
+          if (state.activePlaylistName === playlistName) {
+            renderPlaylistDetailView(playlistName);
           }
         } catch (err) {
           console.error(err);
@@ -432,7 +426,6 @@ function renderPlaylistAddSongInline(playlistName, container) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-// Funciones del menú contextual
 export function addContextSongToQueue() {
   if (!contextMenuSong) return;
   const newQueue = [...queue, contextMenuSong];
@@ -446,22 +439,11 @@ export async function addContextSongToSpecificPlaylist(playlistName) {
   if (!contextMenuSong) return;
   const playlist = state.playlists[playlistName];
   if (playlist && contextMenuSong.id_cancion) {
-    // Enviar a la API
-    const formData = new FormData();
-    formData.append("action", "add_to_playlist");
-    formData.append("id_playlist", playlist.id_playlist);
-    formData.append("id_cancion", contextMenuSong.id_cancion);
     try {
-      const res = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.success) {
-        await refreshUI();
-        // Si la vista actual es esa playlist, refrescarla
-        if (state.activePlaylistName === playlistName) {
-          renderPlaylistDetailView(playlistName);
-        }
-      } else {
-        await showAlert(data.message || "Error al añadir la canción", "Error");
+      await addSongToPlaylist(playlist.id_playlist, contextMenuSong.id_cancion);
+      await refreshUI();
+      if (state.activePlaylistName === playlistName) {
+        renderPlaylistDetailView(playlistName);
       }
     } catch (err) {
       console.error(err);
@@ -511,8 +493,6 @@ export function openContextMenuAt(e, song, songIndex, albumIdx) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-// Actualizar UI del reproductor (mini y completo) cuando cambia la canción o estado
-// Actualizar UI del reproductor (mini y completo) cuando cambia la canción o estado
 export function updatePlayingUIs(playing) {
   if (queue.length === 0) return;
   const song = queue[queueIndex];
@@ -524,9 +504,7 @@ export function updatePlayingUIs(playing) {
   if (DOM.fullPlayer.cover) DOM.fullPlayer.cover.src = song.albumCover;
   if (DOM.fullPlayer.title) DOM.fullPlayer.title.innerText = song.trackTitle;
 
-  // --- NUEVO: hacer clickeable el nombre del artista en full player ---
   if (DOM.fullPlayer.artist) {
-    // Limpiar contenido previo
     DOM.fullPlayer.artist.innerHTML = "";
     const artistSpan = document.createElement("span");
     artistSpan.textContent = song.artistName;
@@ -536,11 +514,9 @@ export function updatePlayingUIs(playing) {
     artistSpan.className = "fullplayer-artist-clickable";
     artistSpan.addEventListener("click", (e) => {
       e.stopPropagation();
-      // Cerrar el full player antes de cambiar de vista
       if (window.minimizeFullPlayer) {
         window.minimizeFullPlayer();
       }
-      // Abrir el perfil del artista
       if (window.openArtistProfile && song.artistName) {
         window.openArtistProfile(song.artistName);
       }
@@ -566,17 +542,16 @@ export function updatePlayingUIs(playing) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-// Función auxiliar para escapar HTML
 function escapeHtml(str) {
   if (!str) return "";
-  return str.replace(/[&<>]/g, function (m) {
+  return str.replace(/[&<>]/g, (m) => {
     if (m === "&") return "&amp;";
     if (m === "<") return "&lt;";
     if (m === ">") return "&gt;";
     return m;
   });
 }
-// Al final de ui.js, asegurar que la función esté disponible globalmente
+
 window.renderPlaylistDetailView = renderPlaylistDetailView;
 
 export { refreshUI };

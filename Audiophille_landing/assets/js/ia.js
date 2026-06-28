@@ -1,15 +1,29 @@
 // js/ia.js
 import { loadInitialData } from "./var.js";
+import { api } from "./api.js"; // 👈 NUEVO
 
-if (!window.curAlbumCreation)
-  window.curAlbumCreation = { active: false, titulo: "", artista: "", cover: null, coverAttempts: 0, songs: [], waitingForDetails: false };
-if (!window.curPlaylistCreation) window.curPlaylistCreation = { active: false, step: 0, nombre: "" };
+if (!window.curAlbumCreation) {
+  window.curAlbumCreation = {
+    active: false,
+    titulo: "",
+    artista: "",
+    cover: null,
+    coverAttempts: 0,
+    songs: [],
+    waitingForDetails: false,
+  };
+}
+if (!window.curPlaylistCreation) {
+  window.curPlaylistCreation = { active: false, step: 0, nombre: "" };
+}
 
 async function refreshUI() {
   await loadInitialData();
   if (window.renderPlaylistsSidebarLinks) window.renderPlaylistsSidebarLinks();
   if (window.renderAlbumCards) window.renderAlbumCards();
-  if (window.state?.activePlaylistName && window.renderPlaylistDetailView) window.renderPlaylistDetailView(window.state.activePlaylistName);
+  if (window.state?.activePlaylistName && window.renderPlaylistDetailView) {
+    window.renderPlaylistDetailView(window.state.activePlaylistName);
+  }
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -30,7 +44,9 @@ export async function procesarComandoIA(instruccionUsuario, archivoAdjunto = nul
     return "👍 Entendido.";
   }
   if (prompt === "ayuda" || prompt === "comandos" || prompt === "help") return mostrarAyuda();
-  if (prompt.match(/^(hola|buenas|qué tal|hey|oye|saludos|ola)$/i)) return "👋 ¡Hola! Escribe <b>ayuda</b> para ver comandos.";
+  if (prompt.match(/^(hola|buenas|qué tal|hey|oye|saludos|ola)$/i)) {
+    return "👋 ¡Hola! Escribe <b>ayuda</b> para ver comandos.";
+  }
   if (
     (prompt.includes("playlist") || prompt.includes("lista")) &&
     (prompt.includes("crea") || prompt.includes("crear") || prompt.includes("nueva") || prompt.includes("haz") || prompt.includes("genera"))
@@ -39,14 +55,24 @@ export async function procesarComandoIA(instruccionUsuario, archivoAdjunto = nul
     window.curPlaylistCreation.step = 1;
     return `<b>🎵 Vamos a crear una nueva playlist</b><br><br>Primero, <b>¿cómo quieres llamarla?</b><br><i>(Ejemplo: "Rock para entrenar")</i> ✨`;
   }
-  if (prompt.includes("crear") || prompt.includes("crea") || prompt.includes("nuevo album") || prompt.includes("nuevo álbum"))
+  if (prompt.includes("crear") || prompt.includes("crea") || prompt.includes("nuevo album") || prompt.includes("nuevo álbum")) {
     return iniciarCreacionAlbum(instruccionUsuario);
-  if (prompt.includes("estadística") || prompt.includes("estadisticas") || prompt === "stats") return await generarEstadisticas();
-  if (prompt.includes("recomienda") || prompt.includes("sugiere") || prompt.includes("recomendación")) return await recomendarCanciones();
-  if (window.curPlaylistCreation.active) return manejarFlujoPlaylist(instruccionUsuario, prompt, callbackActualizarInterfaz);
-  if (prompt.includes("artista favorito") || prompt.includes("más escuchado") || prompt.includes("top artista"))
+  }
+  if (prompt.includes("estadística") || prompt.includes("estadisticas") || prompt === "stats") {
+    return await generarEstadisticas();
+  }
+  if (prompt.includes("recomienda") || prompt.includes("sugiere") || prompt.includes("recomendación")) {
+    return await recomendarCanciones();
+  }
+  if (window.curPlaylistCreation.active) {
+    return manejarFlujoPlaylist(instruccionUsuario, prompt, callbackActualizarInterfaz);
+  }
+  if (prompt.includes("artista favorito") || prompt.includes("más escuchado") || prompt.includes("top artista")) {
     return await obtenerArtistaFavorito();
-  if (window.curAlbumCreation.active) return manejarFlujoAlbum(instruccionUsuario, prompt, callbackActualizarInterfaz);
+  }
+  if (window.curAlbumCreation.active) {
+    return manejarFlujoAlbum(instruccionUsuario, prompt, callbackActualizarInterfaz);
+  }
   return procesarMensajeLocal(instruccionUsuario, callbackActualizarInterfaz);
 }
 
@@ -78,10 +104,11 @@ async function generarEstadisticas() {
 async function recomendarCanciones() {
   let plays = {};
   try {
-    const res = await fetch(`${window.baseUrl}api.php?action=get_play_stats`);
-    const data = await res.json();
+    const data = await api.get("get_play_stats");
     if (data.success) plays = data.plays;
-  } catch (e) {}
+  } catch (_) {
+    // Silencioso
+  }
   const albums = window.albumsFromDB || [];
   if (Object.keys(plays).length === 0) {
     const allSongs = [];
@@ -91,54 +118,66 @@ async function recomendarCanciones() {
   }
   let topArtist = "",
     maxPlays = 0;
-  for (const [artist, count] of Object.entries(plays))
+  for (const [artist, count] of Object.entries(plays)) {
     if (count > maxPlays) {
       maxPlays = count;
       topArtist = artist;
     }
+  }
   const picks = [];
   albums.forEach((album) => {
-    if (album.artist.toLowerCase().includes(topArtist.toLowerCase()))
+    if (album.artist.toLowerCase().includes(topArtist.toLowerCase())) {
       album.songs.forEach((song) => picks.push(`${song.trackTitle} - ${album.artist}`));
+    }
   });
   if (!picks.length) return `🎧 Basado en ${topArtist}, no encontré más canciones.`;
   return `🎧 Basado en tu artista más escuchado (${topArtist}):<br>• ${picks.slice(0, 3).join("<br>• ")}`;
 }
 
 async function obtenerArtistaFavorito() {
-  if (!window.obtenerArtistaMasEscuchadoYValorado) return "🔧 Sistema no listo. Reproduce y califica canciones.";
+  if (!window.obtenerArtistaMasEscuchadoYValorado) {
+    return "🔧 Sistema no listo. Reproduce y califica canciones.";
+  }
   const res = await window.obtenerArtistaMasEscuchadoYValorado();
-  if (!res || res.artista === "Ninguno todavía") return "🎧 Aún no hay datos. Reproduce y califica canciones.";
+  if (!res || res.artista === "Ninguno todavía") {
+    return "🎧 Aún no hay datos. Reproduce y califica canciones.";
+  }
   return `<b>⭐ Tu artista favorito es ${res.artista}</b><br>• Puntuación: ${res.puntuacion} pts<br>• Reproducciones: ${res.reproducciones}<br>• Calificación media: ${res.ratingPromedio} ★`;
 }
 
 async function procesarArchivo(file, textoPrompt, callbackActualizarInterfaz) {
   const isImage = file.type.startsWith("image/");
   const isAudio = file.type.startsWith("audio/");
+
   if (window.curAlbumCreation.active && !window.curAlbumCreation.cover && isImage) {
     window.curAlbumCreation.cover = file;
     window.curAlbumCreation.coverAttempts = 0;
     return "🖼️ Portada recibida. Ahora sube canciones o escribe 'listo'.";
   }
+
   if (window.curAlbumCreation.active && window.curAlbumCreation.cover && isAudio) {
     window.curAlbumCreation.songs.push({ trackTitle: file.name.replace(/\.[^/.]+$/, ""), file });
     return `🎵 Canción "${file.name}" agregada. Llevas ${window.curAlbumCreation.songs.length} canción(es).`;
   }
+
   if (isAudio && !window.curAlbumCreation.active) {
     const formData = new FormData();
-    formData.append("action", "import_song");
     formData.append("audio", file);
+    // ✅ CORREGIDO: pasar action como segundo parámetro
     try {
-      const res = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-      const data = await res.json();
+      const data = await api.post("import_song", formData);
       if (data.success) {
         if (callbackActualizarInterfaz) await callbackActualizarInterfaz();
         return `✨ Canción "${data.titulo}" importada.`;
-      } else return `❌ Error: ${data.message}`;
+      } else {
+        return `❌ Error: ${data.message}`;
+      }
     } catch (e) {
-      return "❌ Error de red.";
+      console.error("Error en import_song:", e);
+      return `❌ Error de red: ${e.message}`;
     }
   }
+
   return `📎 Archivo "${file.name}" recibido.`;
 }
 
@@ -154,14 +193,9 @@ async function manejarFlujoPlaylist(mensajeUsuario, prompt, callbackActualizarIn
   if (window.curPlaylistCreation.step === 2) {
     const criterio = prompt;
     const nombrePlaylist = window.curPlaylistCreation.nombre;
-    const formDataCreate = new FormData();
-    formDataCreate.append("action", "create_playlist");
-    formDataCreate.append("nombre", nombrePlaylist);
     let playlistId = null;
     try {
-      const res = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formDataCreate });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
+      const data = await api.post("create_playlist", { nombre: nombrePlaylist });
       playlistId = data.id_playlist;
     } catch (e) {
       return `❌ Error al crear playlist: ${e.message}`;
@@ -176,14 +210,10 @@ async function manejarFlujoPlaylist(mensajeUsuario, prompt, callbackActualizarIn
             (album.genre && album.genre.toLowerCase().includes(criterio)) ||
             (song.genre && song.genre.toLowerCase().includes(criterio))
           ) {
-            const formAdd = new FormData();
-            formAdd.append("action", "add_to_playlist");
-            formAdd.append("id_playlist", playlistId);
-            formAdd.append("id_cancion", song.id_cancion);
             try {
-              await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formAdd });
+              await api.post("add_to_playlist", { id_playlist: playlistId, id_cancion: song.id_cancion });
               agregadas++;
-            } catch (e) {}
+            } catch (_) {}
           }
         }
       }
@@ -192,9 +222,11 @@ async function manejarFlujoPlaylist(mensajeUsuario, prompt, callbackActualizarIn
     else await refreshUI();
     window.curPlaylistCreation.active = false;
     window.curPlaylistCreation.step = 0;
-    if (agregadas > 0)
+    if (agregadas > 0) {
       return `<b>🎉 Playlist "${nombrePlaylist}" creada</b><br>✅ Se añadieron ${agregadas} canciones (coinciden con "${criterio}").`;
-    else return `<b>✨ Playlist "${nombrePlaylist}" creada (vacía).</b><br>Puedes llenarla manualmente.`;
+    } else {
+      return `<b>✨ Playlist "${nombrePlaylist}" creada (vacía).</b><br>Puedes llenarla manualmente.`;
+    }
   }
   return "⚠️ Error. Escribe 'cancelar'.";
 }
@@ -209,10 +241,26 @@ function iniciarCreacionAlbum(mensajeUsuario) {
     titulo = match[1].trim();
     artista = match[2].trim();
   } else {
-    window.curAlbumCreation = { active: true, titulo: "", artista: "", cover: null, coverAttempts: 0, songs: [], waitingForDetails: true };
+    window.curAlbumCreation = {
+      active: true,
+      titulo: "",
+      artista: "",
+      cover: null,
+      coverAttempts: 0,
+      songs: [],
+      waitingForDetails: true,
+    };
     return `<b>📝 Para crear un álbum, dime el título y artista.</b><br>Ejemplo: <i>"crea el álbum Thriller de Michael Jackson"</i>`;
   }
-  window.curAlbumCreation = { active: true, titulo, artista, cover: null, coverAttempts: 0, songs: [], waitingForDetails: false };
+  window.curAlbumCreation = {
+    active: true,
+    titulo,
+    artista,
+    cover: null,
+    coverAttempts: 0,
+    songs: [],
+    waitingForDetails: false,
+  };
   return `<b>✨ Creando álbum "${titulo}" de "${artista}"</b><br><br><b>Paso 1:</b> Sube una imagen de portada (clip 📎) o escribe <i>"omitir"</i>.`;
 }
 
@@ -227,7 +275,9 @@ async function manejarFlujoAlbum(mensajeUsuario, prompt, callbackActualizarInter
       cur.artista = match[2].trim();
       cur.waitingForDetails = false;
       return `<b>✅ Álbum: ${cur.titulo} de ${cur.artista}</b><br><br>Sube portada o escribe "omitir".`;
-    } else return "❓ Formato incorrecto. Ej: 'crea el álbum X de Y' o 'cancelar'.";
+    } else {
+      return "❓ Formato incorrecto. Ej: 'crea el álbum X de Y' o 'cancelar'.";
+    }
   }
   if (!cur.cover) {
     if (prompt === "omitir" || prompt === "defecto") {
@@ -236,13 +286,14 @@ async function manejarFlujoAlbum(mensajeUsuario, prompt, callbackActualizarInter
       return `🖼️ Portada genérica. Ahora sube canciones o escribe "listo".`;
     }
     cur.coverAttempts++;
-    if (cur.coverAttempts >= 3) return "❓ Varios intentos. Escribe 'omitir' para usar portada genérica.";
+    if (cur.coverAttempts >= 3) {
+      return "❓ Varios intentos. Escribe 'omitir' para usar portada genérica.";
+    }
     return `🖼️ Esperando portada para "${cur.titulo}". Sube imagen o escribe "omitir".`;
   }
   if (prompt === "listo" || prompt === "guardar" || prompt === "terminar") {
     if (cur.songs.length === 0) return "⚠️ El álbum no tiene canciones. Sube al menos un audio.";
     const formData = new FormData();
-    formData.append("action", "create_album");
     formData.append("titulo", cur.titulo);
     formData.append("artista", cur.artista);
     if (cur.cover instanceof File) formData.append("cover_file", cur.cover);
@@ -253,13 +304,15 @@ async function manejarFlujoAlbum(mensajeUsuario, prompt, callbackActualizarInter
     }
     formData.append("songs_count", cur.songs.length);
     try {
-      const res = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData, credentials: "same-origin" });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-      if (callbackActualizarInterfaz) await callbackActualizarInterfaz();
-      else await refreshUI();
-      window.curAlbumCreation.active = false;
-      return `<b>🎉 Álbum "${cur.titulo}" publicado</b><br>Contiene ${cur.songs.length} canciones.`;
+      const data = await api.post("create_album", formData);
+      if (data.success) {
+        if (callbackActualizarInterfaz) await callbackActualizarInterfaz();
+        else await refreshUI();
+        window.curAlbumCreation.active = false;
+        return `<b>🎉 Álbum "${cur.titulo}" publicado</b><br>Contiene ${cur.songs.length} canciones.`;
+      } else {
+        return `❌ Error: ${data.message}`;
+      }
     } catch (err) {
       return `❌ Error: ${err.message}`;
     }
@@ -269,6 +322,7 @@ async function manejarFlujoAlbum(mensajeUsuario, prompt, callbackActualizarInter
 
 async function procesarMensajeLocal(mensajeUsuario, callbackActualizarInterfaz) {
   const prompt = mensajeUsuario.toLowerCase().trim();
+
   // Eliminar playlist
   if (prompt.includes("elimina") || prompt.includes("borra")) {
     const match = mensajeUsuario.match(/(?:elimina|borra)(?:r)?\s+(?:la\s+)?playlist\s+["'«]?([^"'\n\r«]+?)["'»]?$/i);
@@ -276,27 +330,27 @@ async function procesarMensajeLocal(mensajeUsuario, callbackActualizarInterfaz) 
       const pName = match[1].trim();
       const playlists = window.state?.playlists || {};
       let pid = null;
-      for (const [name, pl] of Object.entries(playlists))
+      for (const [name, pl] of Object.entries(playlists)) {
         if (name.toLowerCase() === pName.toLowerCase()) {
           pid = pl.id_playlist;
           break;
         }
+      }
       if (!pid) return `⚠️ No encontré la playlist "${pName}".`;
       try {
-        const fd = new FormData();
-        fd.append("action", "delete_playlist");
-        fd.append("id_playlist", pid);
-        const res = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: fd });
-        const data = await res.json();
+        const data = await api.post("delete_playlist", { id_playlist: pid });
         if (data.success) {
           if (callbackActualizarInterfaz) await callbackActualizarInterfaz();
           return `🗑️ Eliminada playlist "${pName}".`;
-        } else return `⚠️ Error: ${data.message}`;
+        } else {
+          return `⚠️ Error: ${data.message}`;
+        }
       } catch (e) {
         return "⚠️ Error de conexión.";
       }
     }
   }
+
   // Agregar canción a playlist
   if (prompt.includes("agrega") || prompt.includes("añade") || prompt.includes("mete")) {
     const match = mensajeUsuario.match(
@@ -308,12 +362,13 @@ async function procesarMensajeLocal(mensajeUsuario, callbackActualizarInterfaz) 
       const playlists = window.state?.playlists || {};
       let playlistId = null,
         playlistRealName = null;
-      for (const [name, pl] of Object.entries(playlists))
+      for (const [name, pl] of Object.entries(playlists)) {
         if (name.toLowerCase() === playlistName.toLowerCase()) {
           playlistId = pl.id_playlist;
           playlistRealName = name;
           break;
         }
+      }
       if (!playlistId) return `⚠️ No encuentro la playlist "${playlistName}".`;
       const albums = window.albumsFromDB || [];
       let foundSong = null;
@@ -327,43 +382,44 @@ async function procesarMensajeLocal(mensajeUsuario, callbackActualizarInterfaz) 
         if (foundSong) break;
       }
       if (!foundSong) return `⚠️ No encontré la canción "${match[1]}".`;
-      const fd = new FormData();
-      fd.append("action", "add_to_playlist");
-      fd.append("id_playlist", playlistId);
-      fd.append("id_cancion", foundSong.id_cancion);
       try {
-        const res = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: fd });
-        const data = await res.json();
+        const data = await api.post("add_to_playlist", {
+          id_playlist: playlistId,
+          id_cancion: foundSong.id_cancion,
+        });
         if (data.success) {
           if (callbackActualizarInterfaz) await callbackActualizarInterfaz();
-          if (window.state?.activePlaylistName === playlistRealName && window.renderPlaylistDetailView)
+          if (window.state?.activePlaylistName === playlistRealName && window.renderPlaylistDetailView) {
             window.renderPlaylistDetailView(playlistRealName);
+          }
           return `🎵 ¡Éxito! Agregué "${foundSong.trackTitle}" a la playlist "${playlistRealName}".`;
-        } else return `⚠️ Error: ${data.message}`;
+        } else {
+          return `⚠️ Error: ${data.message}`;
+        }
       } catch (e) {
         return "⚠️ Error de conexión.";
       }
     }
   }
+
   // Crear playlist simple
   if (prompt.includes("playlist") && (prompt.includes("crea") || prompt.includes("crear") || prompt.includes("nueva"))) {
     const match = mensajeUsuario.match(/(?:crea|crear|nueva)\s+playlist\s+(?:llamada\s+)?["'«]?([^"'\n\r«]+?)["'»]?$/i);
     if (match) {
       const pName = match[1].trim();
-      const fd = new FormData();
-      fd.append("action", "create_playlist");
-      fd.append("nombre", pName);
       try {
-        const res = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: fd });
-        const data = await res.json();
+        const data = await api.post("create_playlist", { nombre: pName });
         if (data.success) {
           if (callbackActualizarInterfaz) await callbackActualizarInterfaz();
           return `🎉 Playlist "${pName}" creada.`;
-        } else return `⚠️ Error: ${data.message}`;
+        } else {
+          return `⚠️ Error: ${data.message}`;
+        }
       } catch (e) {
         return "⚠️ Error de conexión.";
       }
     }
   }
+
   return "🎵 No entendí. Escribe 'ayuda'.";
 }

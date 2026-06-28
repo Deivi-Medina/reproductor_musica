@@ -1,5 +1,6 @@
 // assets/js/social/explore.js
 import { toggleFollowUser } from "./follow.js";
+import { getExploreUsers } from "../services/exploreService.js";
 
 let exploreOffset = 0;
 const EXPLORE_LIMIT = 20;
@@ -18,7 +19,7 @@ export async function loadExploreUsers(reset = true) {
   const loading = document.getElementById("exploreLoading");
 
   if (!container) {
-    console.warn("⚠️ exploreUsersList no encontrado");
+    console.warn("exploreUsersList no encontrado");
     return;
   }
 
@@ -34,22 +35,7 @@ export async function loadExploreUsers(reset = true) {
   if (loader) loader.classList.remove("hidden");
 
   try {
-    const searchParam = exploreSearchTerm ? `&search=${encodeURIComponent(exploreSearchTerm)}` : "";
-    const url = `${window.baseUrl}api.php?action=explore_users&limit=${EXPLORE_LIMIT}&offset=${exploreOffset}&filter=${exploreFilter}${searchParam}`;
-    const response = await fetch(url, { credentials: "include" });
-
-    // ✅ Verificar que la respuesta sea JSON
-    const text = await response.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      console.error("❌ La respuesta no es JSON:", text.substring(0, 200));
-      if (reset) {
-        container.innerHTML = `<div class="explore-error">⚠️ Error de conexión al cargar usuarios</div>`;
-      }
-      return;
-    }
+    const data = await getExploreUsers(exploreSearchTerm || "", EXPLORE_LIMIT, exploreOffset, exploreFilter);
 
     if (loading) loading.style.display = "none";
 
@@ -60,7 +46,6 @@ export async function loadExploreUsers(reset = true) {
       return;
     }
 
-    // Actualizar contador total
     const totalEl = document.getElementById("totalUsersCount");
     if (totalEl && data.total !== undefined) {
       totalEl.textContent = data.total + " usuarios";
@@ -69,12 +54,12 @@ export async function loadExploreUsers(reset = true) {
     if (data.users.length === 0) {
       if (reset) {
         container.innerHTML = `
-                    <div class="explore-empty">
-                        <i data-lucide="users"></i>
-                        <h3>No se encontraron usuarios</h3>
-                        <p>${exploreSearchTerm ? `No hay resultados para "${exploreSearchTerm}"` : "No hay usuarios para mostrar"}</p>
-                    </div>
-                `;
+          <div class="explore-empty">
+            <i data-lucide="users"></i>
+            <h3>No se encontraron usuarios</h3>
+            <p>${exploreSearchTerm ? `No hay resultados para "${exploreSearchTerm}"` : "No hay usuarios para mostrar"}</p>
+          </div>
+        `;
         if (window.lucide) window.lucide.createIcons();
       }
       hasMoreUsers = false;
@@ -126,14 +111,14 @@ function createUserCard(user) {
   const isFollowing = user.is_following || false;
 
   card.innerHTML = `
-        <img src="${avatar}" class="user-avatar" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">
-        <div class="user-name" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">${escapeHtml(user.nombre_usuario)}</div>
-        <div class="user-username">@${escapeHtml(user.nombre_usuario)}</div>
-        <div class="user-followers"><strong>${user.followers_count || 0}</strong> seguidores</div>
-        <button class="btn-follow-small ${isFollowing ? "following" : ""}" data-userid="${user.id_usuario}">
-            ${isFollowing ? "Dejar de seguir" : "Seguir"}
-        </button>
-    `;
+    <img src="${avatar}" class="user-avatar" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">
+    <div class="user-name" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">${escapeHtml(user.nombre_usuario)}</div>
+    <div class="user-username">@${escapeHtml(user.nombre_usuario)}</div>
+    <div class="user-followers"><strong>${user.followers_count || 0}</strong> seguidores</div>
+    <button class="btn-follow-small ${isFollowing ? "following" : ""}" data-userid="${user.id_usuario}">
+      ${isFollowing ? "Dejar de seguir" : "Seguir"}
+    </button>
+  `;
 
   const followBtn = card.querySelector(".btn-follow-small");
   followBtn.addEventListener("click", async (e) => {
@@ -207,7 +192,7 @@ export function setupExploreInfiniteScroll() {
 
 function escapeHtml(str) {
   if (!str) return "";
-  return str.replace(/[&<>"]/g, function (m) {
+  return str.replace(/[&<>"]/g, (m) => {
     if (m === "&") return "&amp;";
     if (m === "<") return "&lt;";
     if (m === ">") return "&gt;";

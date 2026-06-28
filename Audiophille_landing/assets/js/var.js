@@ -1,6 +1,4 @@
 // js/var.js
-import albums from "./canciones.js";
-
 const DOM = {
   sidebar: {
     navHome: document.getElementById("navHome"),
@@ -18,7 +16,7 @@ const DOM = {
     diary: document.getElementById("diaryView"),
     game: document.getElementById("gameView"),
     profile: document.getElementById("profileView"),
-    community: document.getElementById("communityView"), // 👈 NUEVO
+    community: document.getElementById("communityView"),
     tracksList: document.getElementById("tracksDynamicList"),
     albumGrid: document.getElementById("albumGrid"),
     header: document.getElementById("globalHeader"),
@@ -137,7 +135,6 @@ const DOM = {
   },
 };
 
-// ================== ESTADO GLOBAL ==================
 export const state = {
   favorites: [],
   playlists: {},
@@ -150,7 +147,6 @@ export const state = {
   loaded: false,
 };
 
-// ================== FUNCIONES AUXILIARES ==================
 export function formatTimerString(seconds) {
   if (isNaN(seconds) || seconds === Infinity) return "0:00";
   const mins = Math.floor(seconds / 60);
@@ -177,14 +173,15 @@ export function preloadDurations(songsArray, containerElement) {
   });
 }
 
-// ================== CARGA DE DATOS DESDE LA API ==================
 export async function loadInitialData() {
   if (!state.user_id) {
     console.warn("No hay user_id, no se pueden cargar datos.");
     return false;
   }
   try {
-    const res = await fetch(`${window.baseUrl}api.php?action=get_initial_data`);
+    const res = await fetch(`${window.baseUrl}api.php?action=get_initial_data`, {
+      credentials: "include",
+    });
     const data = await res.json();
     if (!data.success) {
       console.error("Error al cargar datos iniciales:", data.message);
@@ -263,7 +260,9 @@ export async function loadInitialData() {
   }
 }
 
-// ================== FUNCIONES PARA GUARDAR EN LA API ==================
+// ============================================================
+// EXPORTADA PARA app.js
+// ============================================================
 export async function saveEqToAPI(bass, vocals, treble) {
   if (!state.user_id) return;
   const formData = new FormData();
@@ -272,36 +271,23 @@ export async function saveEqToAPI(bass, vocals, treble) {
   formData.append("vocals", vocals);
   formData.append("treble", treble);
   try {
-    await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
+    await fetch(`${window.baseUrl}api.php`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
   } catch (e) {
     console.error("Error guardando EQ:", e);
   }
 }
 
-export async function saveFollowedArtistsToAPI(artistName, follow) {
-  if (!state.user_id) return;
-  const formData = new FormData();
-  formData.append("action", "toggle_follow_artist");
-  formData.append("artist_name", artistName);
-  formData.append("follow", follow ? "1" : "0");
-  try {
-    await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-  } catch (e) {
-    console.error("Error guardando artista seguido:", e);
-  }
-}
-
-// ================== FUNCIONES OBSOLETAS ==================
+// Funciones obsoletas (se mantienen por compatibilidad)
 export function saveState() {
   console.warn("saveState() ya no es necesario. Usar API.");
 }
-
 export function saveAllAlbums() {
   console.warn("saveAllAlbums() ya no es necesario. Usar API.");
 }
 
-// ================== EXPOSICIÓN GLOBAL ==================
 window.state = state;
-
-// ================== EXPORTACIÓN POR DEFECTO ==================
 export default Object.freeze(DOM);

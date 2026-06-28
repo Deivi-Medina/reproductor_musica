@@ -242,7 +242,6 @@ $user_id = $_SESSION['user_id'];
             <!-- ==================== NUEVA VISTA: COMUNIDAD ==================== -->
             <main class="content-wrapper hidden" id="communityView">
                 <div class="community-container">
-                    <!-- Header de comunidad -->
                     <div class="community-header-inline">
                         <h2><i data-lucide="users" class="community-icon"></i> Comunidad</h2>
                         <div class="community-tabs">
@@ -260,11 +259,7 @@ $user_id = $_SESSION['user_id'];
                             </button>
                         </div>
                     </div>
-
-                    <!-- Contenido de las pestañas -->
                     <div class="community-content">
-
-                        <!-- ===== FEED ===== -->
                         <div id="tab-feed" class="community-tab-panel active">
                             <div class="feed-header-actions">
                                 <button id="feedRefreshBtn" class="feed-refresh-btn" title="Actualizar feed">
@@ -277,9 +272,7 @@ $user_id = $_SESSION['user_id'];
                                 <button class="feed-filter-btn" data-filter="review">Reseñas</button>
                                 <button class="feed-filter-btn" data-filter="follow">Seguidores</button>
                             </div>
-                            <div id="feedList" class="feed-list">
-                                <!-- El feed se carga desde JS -->
-                            </div>
+                            <div id="feedList" class="feed-list"></div>
                             <div id="feedLoader" class="feed-loader hidden">
                                 <i data-lucide="loader-circle" class="spin"></i> Cargando más...
                             </div>
@@ -287,8 +280,6 @@ $user_id = $_SESSION['user_id'];
                                 <span>🎵 No hay más publicaciones</span>
                             </div>
                         </div>
-
-                        <!-- ===== EXPLORAR ===== -->
                         <div id="tab-explore" class="community-tab-panel hidden">
                             <div class="explore-header-actions">
                                 <span class="explore-stats" id="totalUsersCount">0 usuarios</span>
@@ -303,9 +294,7 @@ $user_id = $_SESSION['user_id'];
                                 <button class="explore-filter-btn" data-filter="followers">Más seguidos</button>
                                 <button class="explore-filter-btn" data-filter="recent">Recientes</button>
                             </div>
-                            <div id="exploreUsersList" class="explore-users-grid">
-                                <!-- Los usuarios se cargan desde JS -->
-                            </div>
+                            <div id="exploreUsersList" class="explore-users-grid"></div>
                             <div id="exploreLoader" class="explore-loader hidden">
                                 <i data-lucide="loader-circle" class="spin"></i> Cargando más...
                             </div>
@@ -313,31 +302,23 @@ $user_id = $_SESSION['user_id'];
                                 <span>🎵 No hay más usuarios</span>
                             </div>
                         </div>
-
-                        <!-- ===== SEGUIDORES ===== -->
                         <div id="tab-followers" class="community-tab-panel hidden">
                             <h3><i data-lucide="users"></i> Mis seguidores</h3>
-                            <div id="followersList" class="users-grid">
-                                <!-- Se carga desde JS -->
-                            </div>
+                            <div id="followersList" class="users-grid"></div>
                         </div>
-
-                        <!-- ===== SIGUIENDO ===== -->
                         <div id="tab-following" class="community-tab-panel hidden">
                             <h3><i data-lucide="user-check"></i> A quién sigo</h3>
-                            <div id="followingList" class="users-grid">
-                                <!-- Se carga desde JS -->
-                            </div>
+                            <div id="followingList" class="users-grid"></div>
                         </div>
-
                     </div>
                 </div>
             </main>
+
             <div id="publicProfileView" class="content-wrapper hidden"></div>
             <div id="feedView" class="content-wrapper hidden"></div>
             <div id="exploreView" class="content-wrapper hidden"></div>
-        </div> <!-- cierre .main-content -->
-    </div> <!-- cierre .app-container -->
+        </div>
+    </div>
 
     <!-- ==================== MODALES ==================== -->
 
@@ -577,12 +558,19 @@ $user_id = $_SESSION['user_id'];
     </div>
 
     <script>
+        // 1. Definir userId y baseUrl ANTES de cargar app.js
         window.userId = <?= json_encode($user_id) ?>;
         window.baseUrl = <?= json_encode(BASE_URL) ?>;
+        // 2. Inicializar Lucide
         lucide.createIcons();
     </script>
+
+    <!-- 3. Cargar app.js SOLO UNA VEZ -->
     <script type="module" src="<?= BASE_URL ?>assets/js/app.js"></script>
+
+    <!-- 4. Librerías externas -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+
 </body>
 
 </html>

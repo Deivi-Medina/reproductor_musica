@@ -4,11 +4,11 @@ import { showSection } from "../navigation.js";
 import { toggleFollowUser } from "./follow.js";
 import { addPlaylistToLibrary, mergePlaylistsWithFriend } from "./playlist-actions.js";
 import { showAlert } from "../modals.js";
+import { getPublicProfile } from "../services/profileService.js";
 
 let currentProfileUserId = null;
 
 export async function openPublicProfile(userId) {
-  // Si es el propio usuario, redirigir a su perfil
   if (userId == state.user_id) {
     showSection("profile");
     return;
@@ -19,46 +19,41 @@ export async function openPublicProfile(userId) {
 
   const container = document.getElementById("publicProfileView");
   if (!container) {
-    console.warn("⚠️ publicProfileView no encontrado");
+    console.warn("publicProfileView no encontrado");
     return;
   }
 
   container.classList.remove("hidden");
   container.innerHTML = `
-        <div class="profile-loading">
-            <div class="loading-spinner"></div>
-            <p>Cargando perfil...</p>
-        </div>
-    `;
+    <div class="profile-loading">
+      <div class="loading-spinner"></div>
+      <p>Cargando perfil...</p>
+    </div>
+  `;
 
   try {
-    const response = await fetch(`${window.baseUrl}api.php?action=get_public_profile&user_id=${userId}`, {
-      credentials: "include",
-    });
-    const data = await response.json();
-
+    const data = await getPublicProfile(userId);
     if (!data.success) {
       container.innerHTML = `
-                <div class="profile-error">
-                    <i data-lucide="alert-circle"></i>
-                    <p>${data.message || "Error al cargar el perfil"}</p>
-                    <button class="btn-secondary" onclick="window.closePublicProfile()">Volver</button>
-                </div>
-            `;
+        <div class="profile-error">
+          <i data-lucide="alert-circle"></i>
+          <p>${data.message || "Error al cargar el perfil"}</p>
+          <button class="btn-secondary" onclick="window.closePublicProfile()">Volver</button>
+        </div>
+      `;
       if (window.lucide) window.lucide.createIcons();
       return;
     }
-
     renderPublicProfile(container, data);
   } catch (error) {
     console.error("Error al cargar perfil público:", error);
     container.innerHTML = `
-            <div class="profile-error">
-                <i data-lucide="alert-circle"></i>
-                <p>Error de conexión al cargar el perfil</p>
-                <button class="btn-secondary" onclick="window.closePublicProfile()">Volver</button>
-            </div>
-        `;
+      <div class="profile-error">
+        <i data-lucide="alert-circle"></i>
+        <p>Error de conexión al cargar el perfil</p>
+        <button class="btn-secondary" onclick="window.closePublicProfile()">Volver</button>
+      </div>
+    `;
     if (window.lucide) window.lucide.createIcons();
   }
 }
@@ -71,54 +66,53 @@ function renderPublicProfile(container, data) {
     : `https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${encodeURIComponent(user.nombre_usuario)}`;
 
   container.innerHTML = `
-        <div class="public-profile-container">
-            <button class="back-btn" onclick="window.closePublicProfile()">
-                <i data-lucide="arrow-left"></i> Volver
-            </button>
+    <div class="public-profile-container">
+      <button class="back-btn" onclick="window.closePublicProfile()">
+        <i data-lucide="arrow-left"></i> Volver
+      </button>
 
-            <div class="profile-header">
-                <div class="profile-avatar-wrapper">
-                    <img src="${avatarUrl}" class="profile-avatar" alt="${escapeHtml(user.nombre_usuario)}">
-                </div>
-                <div class="profile-info">
-                    <h1 class="profile-name">${escapeHtml(user.nombre_usuario)}</h1>
-                    <p class="profile-username">@${escapeHtml(user.nombre_usuario)}</p>
-                    <div class="profile-stats">
-                        <span class="profile-stat"><strong>${stats.followers}</strong> seguidores</span>
-                        <span class="profile-stat"><strong>${stats.following}</strong> siguiendo</span>
-                        <span class="profile-stat"><strong>${stats.playlists}</strong> playlists</span>
-                        <span class="profile-stat"><strong>${stats.reviews}</strong> reseñas</span>
-                    </div>
-                    <div class="profile-actions">
-                        <button id="btnFollowUser" class="btn-follow ${is_following ? "following" : ""}">
-                            <i data-lucide="${is_following ? "user-minus" : "user-plus"}"></i>
-                            ${is_following ? "Dejar de seguir" : "Seguir"}
-                        </button>
-                        <button id="btnMergePlaylists" class="btn-merge">
-                            <i data-lucide="git-merge"></i> Fusionar playlists
-                        </button>
-                    </div>
-                    ${!are_friends ? '<p class="profile-friend-hint">💡 Deben ser amigos para fusionar playlists</p>' : ""}
-                </div>
-            </div>
-
-            <div class="profile-section">
-                <h3 class="profile-section-title"><i data-lucide="music"></i> Playlists públicas</h3>
-                <div id="publicPlaylistsGrid" class="playlists-grid">
-                    ${playlists.length === 0 ? '<p class="empty-message">No hay playlists públicas</p>' : ""}
-                </div>
-            </div>
-
-            <div class="profile-section">
-                <h3 class="profile-section-title"><i data-lucide="star"></i> Últimas reseñas</h3>
-                <div id="publicReviewsList" class="reviews-list">
-                    ${reviews.length === 0 ? '<p class="empty-message">No hay reseñas todavía</p>' : ""}
-                </div>
-            </div>
+      <div class="profile-header">
+        <div class="profile-avatar-wrapper">
+          <img src="${avatarUrl}" class="profile-avatar" alt="${escapeHtml(user.nombre_usuario)}">
         </div>
-    `;
+        <div class="profile-info">
+          <h1 class="profile-name">${escapeHtml(user.nombre_usuario)}</h1>
+          <p class="profile-username">@${escapeHtml(user.nombre_usuario)}</p>
+          <div class="profile-stats">
+            <span class="profile-stat"><strong>${stats.followers}</strong> seguidores</span>
+            <span class="profile-stat"><strong>${stats.following}</strong> siguiendo</span>
+            <span class="profile-stat"><strong>${stats.playlists}</strong> playlists</span>
+            <span class="profile-stat"><strong>${stats.reviews}</strong> reseñas</span>
+          </div>
+          <div class="profile-actions">
+            <button id="btnFollowUser" class="btn-follow ${is_following ? "following" : ""}">
+              <i data-lucide="${is_following ? "user-minus" : "user-plus"}"></i>
+              ${is_following ? "Dejar de seguir" : "Seguir"}
+            </button>
+            <button id="btnMergePlaylists" class="btn-merge">
+              <i data-lucide="git-merge"></i> Fusionar playlists
+            </button>
+          </div>
+          ${!are_friends ? '<p class="profile-friend-hint">💡 Deben ser amigos para fusionar playlists</p>' : ""}
+        </div>
+      </div>
 
-  // Renderizar playlists
+      <div class="profile-section">
+        <h3 class="profile-section-title"><i data-lucide="music"></i> Playlists públicas</h3>
+        <div id="publicPlaylistsGrid" class="playlists-grid">
+          ${playlists.length === 0 ? '<p class="empty-message">No hay playlists públicas</p>' : ""}
+        </div>
+      </div>
+
+      <div class="profile-section">
+        <h3 class="profile-section-title"><i data-lucide="star"></i> Últimas reseñas</h3>
+        <div id="publicReviewsList" class="reviews-list">
+          ${reviews.length === 0 ? '<p class="empty-message">No hay reseñas todavía</p>' : ""}
+        </div>
+      </div>
+    </div>
+  `;
+
   const grid = document.getElementById("publicPlaylistsGrid");
   if (grid && playlists.length > 0) {
     grid.innerHTML = "";
@@ -126,17 +120,16 @@ function renderPublicProfile(container, data) {
       const card = document.createElement("div");
       card.className = "playlist-card";
       card.innerHTML = `
-                <img src="${pl.portada_url || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400"}" alt="${escapeHtml(pl.nombre)}">
-                <h4>${escapeHtml(pl.nombre)}</h4>
-                <button class="btn-add-to-library" data-playlist="${pl.id_playlist}" data-name="${escapeHtml(pl.nombre)}">
-                    <i data-lucide="plus-circle"></i> Añadir a mi biblioteca
-                </button>
-            `;
+        <img src="${pl.portada_url || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400"}" alt="${escapeHtml(pl.nombre)}">
+        <h4>${escapeHtml(pl.nombre)}</h4>
+        <button class="btn-add-to-library" data-playlist="${pl.id_playlist}" data-name="${escapeHtml(pl.nombre)}">
+          <i data-lucide="plus-circle"></i> Añadir a mi biblioteca
+        </button>
+      `;
       grid.appendChild(card);
     });
   }
 
-  // Renderizar reseñas
   const reviewsList = document.getElementById("publicReviewsList");
   if (reviewsList && reviews.length > 0) {
     reviewsList.innerHTML = "";
@@ -145,25 +138,23 @@ function renderPublicProfile(container, data) {
       const div = document.createElement("div");
       div.className = "review-item";
       div.innerHTML = `
-                <div class="review-header">
-                    <img src="${r.albumCover || "https://via.placeholder.com/48"}" class="review-cover" alt="Cover">
-                    <div class="review-meta">
-                        <div class="review-title">${escapeHtml(r.titulo_cancion_texto)}</div>
-                        <div class="review-artist">${escapeHtml(r.artista_texto)}</div>
-                    </div>
-                </div>
-                <div class="review-stars">${stars}</div>
-                <div class="review-text">${escapeHtml(r.comentario)}</div>
-                <div class="review-date">${new Date(r.fecha).toLocaleDateString()}</div>
-            `;
+        <div class="review-header">
+          <img src="${r.albumCover || "https://via.placeholder.com/48"}" class="review-cover" alt="Cover">
+          <div class="review-meta">
+            <div class="review-title">${escapeHtml(r.titulo_cancion_texto)}</div>
+            <div class="review-artist">${escapeHtml(r.artista_texto)}</div>
+          </div>
+        </div>
+        <div class="review-stars">${stars}</div>
+        <div class="review-text">${escapeHtml(r.comentario)}</div>
+        <div class="review-date">${new Date(r.fecha).toLocaleDateString()}</div>
+      `;
       reviewsList.appendChild(div);
     });
   }
 
-  // Event Listeners
   document.getElementById("btnFollowUser")?.addEventListener("click", async () => {
     const isNowFollowing = await toggleFollowUser(currentProfileUserId, document.getElementById("btnFollowUser"));
-    // Actualizar contador de seguidores
     const statsEl = document.querySelector(".profile-stats");
     if (statsEl) {
       const span = statsEl.querySelector(".profile-stat:first-child");
@@ -172,12 +163,10 @@ function renderPublicProfile(container, data) {
         span.innerHTML = `<strong>${isNowFollowing ? current + 1 : Math.max(0, current - 1)}</strong> seguidores`;
       }
     }
-    // Recargar perfil para actualizar botón de fusión
     openPublicProfile(currentProfileUserId);
   });
 
   document.getElementById("btnMergePlaylists")?.addEventListener("click", async () => {
-    // Verificar si son amigos antes de proceder
     if (!are_friends) {
       await showAlert(
         "❌ Debes ser amigo de este usuario para fusionar playlists.<br><br>Para ser amigos, ambos deben seguirse mutuamente.",
@@ -187,19 +176,16 @@ function renderPublicProfile(container, data) {
     }
     const result = await mergePlaylistsWithFriend(currentProfileUserId, user.nombre_usuario);
     if (result) {
-      // Recargar perfil para reflejar cambios
       openPublicProfile(currentProfileUserId);
     }
   });
 
-  // Botones "Añadir a mi biblioteca"
   document.querySelectorAll(".btn-add-to-library").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const playlistId = btn.dataset.playlist;
       const playlistName = btn.dataset.name;
       await addPlaylistToLibrary(playlistId, playlistName);
-      // Recargar perfil para reflejar cambios (por si la playlist se añadió)
       openPublicProfile(currentProfileUserId);
     });
   });
@@ -219,7 +205,7 @@ window.closePublicProfile = () => {
 
 function escapeHtml(str) {
   if (!str) return "";
-  return str.replace(/[&<>"]/g, function (m) {
+  return str.replace(/[&<>"]/g, (m) => {
     if (m === "&") return "&amp;";
     if (m === "<") return "&lt;";
     if (m === ">") return "&gt;";

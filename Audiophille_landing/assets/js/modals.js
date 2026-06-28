@@ -1,6 +1,5 @@
 // js/modals.js
 
-// Inyectamos el HTML y CSS de los modales si no existen
 function injectModalStyles() {
   if (document.getElementById("custom-modal-styles")) return;
   const style = document.createElement("style");
@@ -143,9 +142,6 @@ function closeModal() {
   }
 }
 
-/**
- * Muestra un alert personalizado (acepta HTML en el mensaje)
- */
 export function showAlert(message, title = "Aviso") {
   return new Promise((resolve) => {
     createModalElements();
@@ -157,7 +153,6 @@ export function showAlert(message, title = "Aviso") {
 
     dynamicDiv.innerHTML = "";
     titleEl.innerText = title;
-    // ✅ Usamos innerHTML para permitir <br> y <strong>
     msgEl.innerHTML = message;
 
     buttonsDiv.innerHTML = `<button class="custom-modal-btn confirm" id="customAlertOk">Aceptar</button>`;
@@ -174,10 +169,6 @@ export function showAlert(message, title = "Aviso") {
   });
 }
 
-/**
- * Muestra un confirm personalizado (Sí/No) - acepta HTML
- * @returns Promise<boolean> true si confirma, false si cancela
- */
 export function showConfirm(message, title = "Confirmar", confirmText = "Sí", cancelText = "No", isDanger = false) {
   return new Promise((resolve) => {
     createModalElements();
@@ -222,10 +213,6 @@ export function showConfirm(message, title = "Confirmar", confirmText = "Sí", c
   });
 }
 
-/**
- * Muestra un prompt personalizado con campo de texto
- * @returns Promise<string | null> el texto ingresado o null si cancela
- */
 export function showPrompt(message, defaultValue = "", title = "Ingrese un valor") {
   return new Promise((resolve) => {
     createModalElements();
@@ -271,7 +258,6 @@ export function showPrompt(message, defaultValue = "", title = "Ingrese un valor
   });
 }
 
-// Para mantener compatibilidad, exponemos las funciones globalmente
 window.showAlert = showAlert;
 window.showConfirm = showConfirm;
 window.showPrompt = showPrompt;

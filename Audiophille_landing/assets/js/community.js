@@ -1,4 +1,4 @@
-// assets/js/community.js - Lógica de pestañas de Comunidad
+// assets/js/community.js
 import { loadFeed, setupFeedInfiniteScroll, filterFeed } from "./social/feed.js";
 import {
   loadExploreUsers,
@@ -8,19 +8,19 @@ import {
   clearExploreSearch,
 } from "./social/explore.js";
 import { getFollowers, getFollowing } from "./social/follow.js";
+import { openPublicProfile } from "./social/profiles.js"; // Importar directamente
 
+// ============================================================
+// INICIALIZACIÓN DE PESTAÑAS
+// ============================================================
 export function initCommunityTabs() {
-  console.log("🌐 Inicializando pestañas de Comunidad...");
-
   // ===== PESTAÑAS PRINCIPALES =====
   document.querySelectorAll(".community-tab").forEach((tab) => {
     tab.addEventListener("click", function () {
-      // Activar/desactivar pestañas
       document.querySelectorAll(".community-tab").forEach((t) => t.classList.remove("active"));
       this.classList.add("active");
       const tabName = this.dataset.tab;
 
-      // Ocultar/mostrar paneles
       document.querySelectorAll(".community-tab-panel").forEach((p) => {
         p.classList.remove("active");
         p.classList.add("hidden");
@@ -31,24 +31,19 @@ export function initCommunityTabs() {
         target.classList.add("active");
       }
 
-      // Cargar contenido según pestaña
       switch (tabName) {
         case "feed":
-          console.log("📰 Cargando feed...");
           loadFeed(true);
           setTimeout(setupFeedInfiniteScroll, 300);
           break;
         case "explore":
-          console.log("🔍 Cargando explorar...");
           loadExploreUsers(true);
           setTimeout(setupExploreInfiniteScroll, 300);
           break;
         case "followers":
-          console.log("👥 Cargando seguidores...");
           loadFollowersList();
           break;
         case "following":
-          console.log("👤 Cargando seguidos...");
           loadFollowingList();
           break;
       }
@@ -104,13 +99,11 @@ export function initCommunityTabs() {
 
   // ===== CARGAR CONTADORES DE SEGUIDORES/SIGUIENDO =====
   loadCounts();
-
-  console.log("✅ Comunidad inicializada correctamente");
 }
 
-// ============================================
+// ============================================================
 // CARGAR LISTA DE SEGUIDORES
-// ============================================
+// ============================================================
 async function loadFollowersList() {
   const container = document.getElementById("followersList");
   if (!container) {
@@ -119,21 +112,21 @@ async function loadFollowersList() {
   }
 
   container.innerHTML = `
-        <div class="explore-loading">
-            <div class="loading-spinner"></div>
-            <p>Cargando seguidores...</p>
-        </div>
-    `;
+    <div class="explore-loading">
+      <div class="loading-spinner"></div>
+      <p>Cargando seguidores...</p>
+    </div>
+  `;
 
   try {
     const data = await getFollowers(window.userId);
     if (!data || data.length === 0) {
       container.innerHTML = `
-                <div class="feed-empty">
-                    <p>No tienes seguidores todavía</p>
-                    <p style="font-size:0.8rem; color:var(--text-secondary);">Comparte tu perfil para que te sigan</p>
-                </div>
-            `;
+        <div class="feed-empty">
+          <p>No tienes seguidores todavía</p>
+          <p style="font-size:0.8rem; color:var(--text-secondary);">Comparte tu perfil para que te sigan</p>
+        </div>
+      `;
       return;
     }
 
@@ -145,28 +138,26 @@ async function loadFollowersList() {
         ? `${window.baseUrl}${user.avatar}`
         : `https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${encodeURIComponent(user.nombre_usuario || "Usuario")}`;
       card.innerHTML = `
-                <img src="${avatar}" class="user-avatar" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">
-                <div class="user-name" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">${escapeHtml(user.nombre_usuario)}</div>
-                <div class="user-username">@${escapeHtml(user.nombre_usuario)}</div>
-                <div class="user-followers" style="font-size:0.75rem;color:var(--text-secondary);">
-                    Siguiendo desde ${new Date(user.fecha_seguimiento).toLocaleDateString()}
-                </div>
-            `;
+        <img src="${avatar}" class="user-avatar" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">
+        <div class="user-name" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">${escapeHtml(user.nombre_usuario)}</div>
+        <div class="user-username">@${escapeHtml(user.nombre_usuario)}</div>
+        <div class="user-followers" style="font-size:0.75rem;color:var(--text-secondary);">
+          Siguiendo desde ${new Date(user.fecha_seguimiento).toLocaleDateString()}
+        </div>
+      `;
       container.appendChild(card);
     });
 
     if (window.lucide) window.lucide.createIcons();
   } catch (error) {
     console.error("Error cargando seguidores:", error);
-    container.innerHTML = `
-            <div class="feed-error">❌ Error al cargar seguidores</div>
-        `;
+    container.innerHTML = `<div class="feed-error">❌ Error al cargar seguidores</div>`;
   }
 }
 
-// ============================================
+// ============================================================
 // CARGAR LISTA DE SIGUIENDO
-// ============================================
+// ============================================================
 async function loadFollowingList() {
   const container = document.getElementById("followingList");
   if (!container) {
@@ -175,23 +166,23 @@ async function loadFollowingList() {
   }
 
   container.innerHTML = `
-        <div class="explore-loading">
-            <div class="loading-spinner"></div>
-            <p>Cargando seguidos...</p>
-        </div>
-    `;
+    <div class="explore-loading">
+      <div class="loading-spinner"></div>
+      <p>Cargando seguidos...</p>
+    </div>
+  `;
 
   try {
     const data = await getFollowing(window.userId);
     if (!data || data.length === 0) {
       container.innerHTML = `
-                <div class="feed-empty">
-                    <p>No sigues a nadie todavía</p>
-                    <button class="btn-primary" onclick="document.querySelector('[data-tab=\\'explore\\']')?.click()">
-                        <i data-lucide="compass"></i> Explorar usuarios
-                    </button>
-                </div>
-            `;
+        <div class="feed-empty">
+          <p>No sigues a nadie todavía</p>
+          <button class="btn-primary" onclick="document.querySelector('[data-tab=\\'explore\\']')?.click()">
+            <i data-lucide="compass"></i> Explorar usuarios
+          </button>
+        </div>
+      `;
       if (window.lucide) window.lucide.createIcons();
       return;
     }
@@ -204,28 +195,26 @@ async function loadFollowingList() {
         ? `${window.baseUrl}${user.avatar}`
         : `https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${encodeURIComponent(user.nombre_usuario || "Usuario")}`;
       card.innerHTML = `
-                <img src="${avatar}" class="user-avatar" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">
-                <div class="user-name" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">${escapeHtml(user.nombre_usuario)}</div>
-                <div class="user-username">@${escapeHtml(user.nombre_usuario)}</div>
-                <div class="user-followers" style="font-size:0.75rem;color:var(--text-secondary);">
-                    Siguiendo desde ${new Date(user.fecha_seguimiento).toLocaleDateString()}
-                </div>
-            `;
+        <img src="${avatar}" class="user-avatar" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">
+        <div class="user-name" onclick="window.openPublicProfile(${user.id_usuario})" style="cursor:pointer;">${escapeHtml(user.nombre_usuario)}</div>
+        <div class="user-username">@${escapeHtml(user.nombre_usuario)}</div>
+        <div class="user-followers" style="font-size:0.75rem;color:var(--text-secondary);">
+          Siguiendo desde ${new Date(user.fecha_seguimiento).toLocaleDateString()}
+        </div>
+      `;
       container.appendChild(card);
     });
 
     if (window.lucide) window.lucide.createIcons();
   } catch (error) {
     console.error("Error cargando seguidos:", error);
-    container.innerHTML = `
-            <div class="feed-error">❌ Error al cargar seguidos</div>
-        `;
+    container.innerHTML = `<div class="feed-error">❌ Error al cargar seguidos</div>`;
   }
 }
 
-// ============================================
+// ============================================================
 // CARGAR CONTADORES EN LAS PESTAÑAS
-// ============================================
+// ============================================================
 async function loadCounts() {
   try {
     const [followersData, followingData] = await Promise.all([getFollowers(window.userId), getFollowing(window.userId)]);
@@ -248,9 +237,9 @@ async function loadCounts() {
   }
 }
 
-// ============================================
+// ============================================================
 // UTILIDADES
-// ============================================
+// ============================================================
 function escapeHtml(str) {
   if (!str) return "";
   return str.replace(/[&<>"]/g, (m) => {
@@ -259,27 +248,5 @@ function escapeHtml(str) {
     if (m === ">") return "&gt;";
     if (m === '"') return "&quot;";
     return m;
-  });
-}
-
-// Exponer función para abrir perfil público desde los cards
-window.openPublicProfile = function (userId) {
-  // Redirigir al perfil propio si es el mismo usuario
-  if (userId == window.userId) {
-    window.location.href = window.baseUrl;
-    // Después de recargar, abrir perfil (esto es un workaround)
-    setTimeout(() => {
-      document.getElementById("navProfile")?.click();
-    }, 500);
-    return;
-  }
-  // Si tienes una vista de perfil público, puedes mostrarla aquí
-  // Por ahora, abrir el dashboard y mostrar el perfil
-  alert("Ver perfil de usuario " + userId + " (funcionalidad en desarrollo)");
-};
-
-if (typeof window.openPublicProfile === "undefined") {
-  import("./social/profiles.js").then((module) => {
-    window.openPublicProfile = module.openPublicProfile;
   });
 }

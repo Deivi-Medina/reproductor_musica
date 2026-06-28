@@ -4,17 +4,14 @@ import { renderAlbumCards, renderFavoritesDetailView, renderPlaylistDetailView }
 import { updateDiarySongsSelector, renderIntegratedDiaryFeed } from "./reviews.js";
 import { startGame, stopGame } from "./game.js";
 import { loadFeed, setupFeedInfiniteScroll } from "./social/feed.js";
-import { loadExploreUsers, setupExploreInfiniteScroll } from "./social/explore.js";
 
 export function showSection(section) {
   const previousSection = state.currentSection;
 
-  // 👇 LIMPIAR ESTADO DE PLAYLIST ACTIVA AL SALIR
   if (section !== "playlist" && !section.startsWith("playlist:")) {
     state.activePlaylistName = null;
   }
 
-  // Ocultar todas las vistas
   const allViews = [
     DOM.views.library,
     DOM.views.albumDetail,
@@ -29,7 +26,6 @@ export function showSection(section) {
     if (view) view.classList.add("hidden");
   });
 
-  // Quitar active de todos los botones del sidebar
   const navItems = [
     DOM.sidebar.navHome,
     DOM.sidebar.navFavorites,
@@ -46,7 +42,6 @@ export function showSection(section) {
     link.classList.remove("active");
   });
 
-  // Sección específica
   if (section === "home") {
     if (DOM.sidebar.navHome) DOM.sidebar.navHome.classList.add("active");
     if (DOM.views.library) DOM.views.library.classList.remove("hidden");
@@ -72,7 +67,9 @@ export function showSection(section) {
     if (DOM.sidebar.navProfile) DOM.sidebar.navProfile.classList.add("active");
     if (DOM.views.profile) {
       DOM.views.profile.classList.remove("hidden");
-      if (typeof window.loadProfileData === "function") window.loadProfileData();
+      if (typeof window.loadProfileData === "function") {
+        window.loadProfileData();
+      }
     }
   } else if (section === "community") {
     if (DOM.sidebar.navCommunity) DOM.sidebar.navCommunity.classList.add("active");
@@ -91,7 +88,6 @@ export function showSection(section) {
     const playlistName = section.replace("playlist:", "");
     state.activePlaylistName = playlistName;
 
-    // Marcar el link activo
     document.querySelectorAll(".playlist-link").forEach((link) => {
       if (link.dataset.name === playlistName) {
         link.classList.add("active");
@@ -106,7 +102,6 @@ export function showSection(section) {
     if (DOM.views.artistProfile) DOM.views.artistProfile.classList.remove("hidden");
   }
 
-  // Detener juego si se sale
   if (previousSection === "game" && section !== "game") {
     stopGame();
   }

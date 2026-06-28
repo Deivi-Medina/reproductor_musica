@@ -69,12 +69,8 @@ function launchConfetti() {
 
 // ==================== FUNCIONES PRINCIPALES ====================
 export function startGame() {
-  console.log("🎮 Iniciando juego...");
-
-  // ✅ Activar modo teclado del juego (bloquear atajos)
   setGameKeyboardMode(true);
 
-  // ✅ Guardar estado de la música principal
   const hasQueue = queue && queue.length > 0;
   const isSongPlaying = isPlaying || !audio.paused;
 
@@ -94,22 +90,15 @@ export function startGame() {
     savedCurrentTime = 0;
   }
 
-  // ✅ Resetear estado del juego
   score = 0;
   previousSongId = null;
   updateScore();
-
-  // ✅ Iniciar primera ronda
   loadNewRound();
 }
 
 export function stopGame() {
-  console.log("🎮 Deteniendo juego...");
-
-  // ✅ Desactivar modo teclado del juego (restaurar atajos)
   setGameKeyboardMode(false);
 
-  // ✅ Limpiar fragmento del juego
   if (fragmentTimeout) {
     clearTimeout(fragmentTimeout);
     fragmentTimeout = null;
@@ -118,10 +107,8 @@ export function stopGame() {
   audio.removeEventListener("timeupdate", stopFragment);
   audio.pause();
 
-  // ✅ Restaurar la música principal
   restoreMainMusic();
 
-  // ✅ Limpiar estado del juego
   currentGameSong = null;
   currentOptions = [];
   currentCorrectAnswer = "";
@@ -130,8 +117,6 @@ export function stopGame() {
 
 function restoreMainMusic() {
   if (savedQueue && savedQueue.length > 0) {
-    console.log("🎵 Restaurando música principal...");
-
     setQueue(savedQueue, savedQueueIndex);
 
     const song = savedQueue[savedQueueIndex];
@@ -170,7 +155,6 @@ export function updateMiniPlayerStatus(isGameActive) {
   const miniPlayer = document.getElementById("miniPlayer");
   if (!miniPlayer) return;
 
-  // ✅ Limpiar mensaje anterior
   const oldStatus = document.getElementById("gameStatusMessage");
   if (oldStatus) oldStatus.remove();
 
@@ -245,12 +229,9 @@ async function loadNewRound() {
     previousSongId = currentGameSong.file;
     currentCorrectAnswer = currentGameSong.trackTitle;
 
-    // ✅ Mostrar carátula con logging para depurar
     if (gameCover) {
-      let coverUrl = currentGameSong.albumCover || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400";
+      const coverUrl = currentGameSong.albumCover || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400";
       gameCover.src = coverUrl;
-      console.log(`🎵 Carátula de "${currentGameSong.trackTitle}":`, coverUrl);
-      console.log(`   Álbum ID: ${currentGameSong.albumId || "N/A"}`);
     }
 
     const incorrectOptions = generateIncorrectOptions(allSongs, currentGameSong.file);
@@ -271,15 +252,11 @@ function getAllSongs() {
   albums.forEach((album) => {
     if (album.songs && Array.isArray(album.songs)) {
       album.songs.forEach((song) => {
-        // ✅ Mejor detección de carátula
         let coverUrl = album.caratula_url || album.cover;
 
-        // ✅ Si la carátula está vacía o es la URL por defecto, intentar obtenerla de la ruta
         if (!coverUrl || coverUrl === "" || coverUrl === "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400") {
-          // Si es un álbum creado por el usuario, buscar en uploads/covers
           if (album.id_album) {
-            // La carátula podría estar en la base de datos, si no, usar fallback
-            console.warn(`⚠️ Álbum "${album.title}" (ID: ${album.id_album}) sin carátula válida. Usando fallback.`);
+            coverUrl = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400";
           }
           coverUrl = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400";
         }
@@ -373,7 +350,7 @@ async function playFragment() {
     audio.pause();
     try {
       await currentPlayPromise;
-    } catch (e) {}
+    } catch (_) {}
     currentPlayPromise = null;
   }
 

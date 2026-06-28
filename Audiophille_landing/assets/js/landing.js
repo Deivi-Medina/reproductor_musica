@@ -1,5 +1,5 @@
 // ==========================================
-// Funciones para manejar modales
+// FUNCIONES PARA MANEJAR MODALES
 // ==========================================
 
 function openModal(type) {
@@ -7,13 +7,10 @@ function openModal(type) {
   const modal = document.getElementById(modalId);
   modal.style.display = "flex";
 
-  // --- Configurar validación en tiempo real para el input de password ---
   const passwordInput = modal.querySelector('input[type="password"]');
   if (passwordInput) {
-    // Remover listeners previos para evitar duplicados
     passwordInput.removeEventListener("input", handlePasswordInput);
     passwordInput.addEventListener("input", handlePasswordInput);
-    // Actualizar estado inicial
     updatePasswordRequirements(passwordInput);
   }
 }
@@ -28,7 +25,6 @@ function switchModal(type) {
   openModal(type);
 }
 
-// Mostrar mensaje de éxito/error desde el servidor
 function showModalMessage(title, message) {
   const modal = document.getElementById("messageModal");
   const titleEl = document.getElementById("modalTitle");
@@ -39,7 +35,7 @@ function showModalMessage(title, message) {
 }
 
 // ==========================================
-// Funciones para auth (toggle password, validación)
+// FUNCIONES PARA AUTH (TOGGLE PASSWORD, VALIDACIÓN)
 // ==========================================
 
 function togglePasswordVisibility(button) {
@@ -49,7 +45,6 @@ function togglePasswordVisibility(button) {
   if (!input) return;
   const isPassword = input.type === "password";
   input.type = isPassword ? "text" : "password";
-  // Cambiar ícono
   const icon = button.querySelector("i");
   if (icon) {
     icon.setAttribute("data-lucide", isPassword ? "eye" : "eye-off");
@@ -74,24 +69,18 @@ function validatePasswordStrength(password) {
 }
 
 function updatePasswordRequirements(input) {
-  // Buscar el contenedor de requisitos: puede estar en el mismo .auth-input-group o en el modal
   let container = input.closest(".auth-input-group")?.querySelector(".password-requirements");
   if (!container) {
-    // Fallback: buscar en todo el modal
     const modal = input.closest(".modal");
     if (modal) {
       container = modal.querySelector(".password-requirements");
     }
   }
-  if (!container) {
-    // Si no hay contenedor, no hacer nada
-    return;
-  }
+  if (!container) return;
 
   const password = input.value;
   const results = validatePasswordStrength(password);
 
-  // Actualizar cada item usando su data-rule
   results.forEach((result) => {
     const item = container.querySelector(`.req-item[data-rule="${result.id}"]`);
     if (item) {
@@ -107,22 +96,19 @@ function updatePasswordRequirements(input) {
   });
 }
 
-// Manejador específico para eventos input
 function handlePasswordInput(e) {
   updatePasswordRequirements(e.target);
 }
 
 // ==========================================
-// Inicialización
+// INICIALIZACIÓN
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
-  // --- Botones de la landing (abrir modales) ---
   document.getElementById("openLoginBtn").addEventListener("click", () => openModal("login"));
   document.getElementById("openRegisterBtn").addEventListener("click", () => openModal("register"));
   document.getElementById("heroRegisterBtn").addEventListener("click", () => openModal("register"));
 
-  // --- Cerrar modales con la X ---
   document.querySelectorAll(".close-modal").forEach((btn) => {
     btn.addEventListener("click", function () {
       const modal = this.closest(".modal");
@@ -130,13 +116,11 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // --- Botón "Aceptar" del modal de mensaje ---
   document.querySelector("#messageModal .auth-btn-primary")?.addEventListener("click", function (e) {
     e.preventDefault();
     closeModal("messageModal");
   });
 
-  // --- Enlaces de cambio de modal (switch) ---
   document.querySelectorAll("[data-switch]").forEach((link) => {
     link.addEventListener("click", function (e) {
       e.preventDefault();
@@ -145,14 +129,12 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // --- Cerrar modal al hacer clic fuera ---
   document.addEventListener("click", function (event) {
     if (event.target.classList.contains("modal")) {
       closeModal(event.target.id);
     }
   });
 
-  // --- Toggle password (delegación) ---
   document.addEventListener("click", function (e) {
     const toggleBtn = e.target.closest(".toggle-password");
     if (toggleBtn) {
@@ -161,7 +143,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // --- Validación en tiempo real (delegación global, por si acaso) ---
   document.addEventListener("input", function (e) {
     const input = e.target;
     if (input.matches('.auth-input-group input[type="password"]')) {
@@ -169,7 +150,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // --- Mensajes de sesión desde atributos data ---
   const body = document.body;
   const message = body.getAttribute("data-message");
   const type = body.getAttribute("data-type");
@@ -178,14 +158,11 @@ document.addEventListener("DOMContentLoaded", function () {
     showModalMessage(title, message);
   }
 
-  // --- Inicializar Lucide ---
   if (typeof lucide !== "undefined") {
     lucide.createIcons();
   }
 
-  // --- Inicializar requisitos de contraseña para inputs que ya están visibles ---
   document.querySelectorAll('.auth-input-group input[type="password"]').forEach((input) => {
-    // Si el input está dentro de un modal visible, actualizar
     if (input.closest(".modal") && input.closest(".modal").style.display !== "none") {
       updatePasswordRequirements(input);
     }

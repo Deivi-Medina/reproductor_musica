@@ -36,15 +36,11 @@ import { loadReviewsFromAPI, initReviewsSystem, updateDiarySongsSelector, render
 import { showSection } from "./navigation.js";
 import { initGameDOM, startGame, stopGame, nextRound } from "./game.js";
 import { openArtistProfile } from "./artists.js";
-// 👇 NUEVO: Importar comunidad
 import { initCommunityTabs } from "./community.js";
 import { openPublicProfile } from "./social/profiles.js";
+import { getUserProfile, getUserStats, updateUserProfile } from "./services/userService.js";
 
-// ============================================================
-// INICIALIZACIÓN PRINCIPAL
-// ============================================================
 async function initApp() {
-  // Mostrar loader
   const loader = document.createElement("div");
   loader.id = "app-loader";
   loader.textContent = "Cargando tu biblioteca musical...";
@@ -52,7 +48,6 @@ async function initApp() {
     "position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); color:white; padding:1rem 2rem; border-radius:30px; z-index:10000; backdrop-filter:blur(10px);";
   document.body.appendChild(loader);
 
-  // Cargar datos iniciales
   const success = await loadInitialData();
   if (!success) {
     alert("Error al cargar los datos. Intenta recargar la página.");
@@ -61,16 +56,12 @@ async function initApp() {
   }
   loader.remove();
 
-  // Renderizar elementos iniciales
   renderPlaylistsSidebarLinks();
   renderAlbumCards();
   bindAudioEvents();
   initKeyboardControls();
   initGameDOM();
 
-  // ============================================================
-  // LISTENERS DE NAVEGACIÓN (sidebar)
-  // ============================================================
   if (DOM.sidebar.navHome) {
     DOM.sidebar.navHome.addEventListener("click", () => showSection("home"));
   }
@@ -96,16 +87,12 @@ async function initApp() {
       }, 100);
     });
   }
-  // 👇 NUEVO: Listener para Comunidad
   if (DOM.sidebar.navCommunity) {
     DOM.sidebar.navCommunity.addEventListener("click", () => {
       showSection("community");
     });
   }
 
-  // ============================================================
-  // PLAYSLISTS (crear, cerrar modales)
-  // ============================================================
   if (DOM.sidebar.btnCreatePlaylist) {
     DOM.sidebar.btnCreatePlaylist.addEventListener("click", openPlaylistModal);
   }
@@ -119,9 +106,6 @@ async function initApp() {
     DOM.modal.btnConfirm.addEventListener("click", createPlaylistAction);
   }
 
-  // ============================================================
-  // MENÚ CONTEXTUAL
-  // ============================================================
   document.addEventListener("click", () => {
     DOM.contextMenu.container?.classList.add("hidden");
   });
@@ -138,9 +122,6 @@ async function initApp() {
     });
   }
 
-  // ============================================================
-  // CONTROLES DE AUDIO (reproductor)
-  // ============================================================
   if (DOM.audioControls.volSlider) {
     DOM.audioControls.volSlider.addEventListener("input", (e) => {
       audio.volume = e.target.value / 100;
@@ -168,7 +149,6 @@ async function initApp() {
     DOM.fullPlayer.btnFavorite.addEventListener("click", toggleFavoriteStatus);
   }
 
-  // Barra de progreso
   if (DOM.audioControls.scrubber) {
     DOM.audioControls.scrubber.addEventListener("input", (e) => {
       if (audio.duration) {
@@ -177,16 +157,12 @@ async function initApp() {
     });
   }
 
-  // Búsqueda global
   if (DOM.views.searchBar) {
     DOM.views.searchBar.addEventListener("input", (e) => {
       renderAlbumCards(e.target.value);
     });
   }
 
-  // ============================================================
-  // REPRODUCTOR COMPLETO (minimizar/expandir)
-  // ============================================================
   window.expandFullPlayer = () => {
     if (DOM.fullPlayer.container) {
       DOM.fullPlayer.container.classList.remove("hidden");
@@ -204,9 +180,6 @@ async function initApp() {
     }
   };
 
-  // ============================================================
-  // ECUALIZADOR
-  // ============================================================
   if (DOM.equalizer.btnToggle && DOM.equalizer.sidebar) {
     DOM.equalizer.btnToggle.addEventListener("click", () => {
       DOM.equalizer.sidebar.classList.toggle("collapsed");
@@ -244,9 +217,6 @@ async function initApp() {
     });
   }
 
-  // ============================================================
-  // ASISTENTE MUSIK
-  // ============================================================
   if (DOM.musikWidget.btnTrigger && DOM.musikWidget.chatWindow) {
     DOM.musikWidget.btnTrigger.addEventListener("click", () => {
       DOM.musikWidget.chatWindow.classList.toggle("musik-hidden");
@@ -280,9 +250,6 @@ async function initApp() {
     DOM.musikChat.fileInput.addEventListener("change", handleLocalFileImport);
   }
 
-  // ============================================================
-  // EDICIÓN DE ÁLBUMES Y PLAYLISTS
-  // ============================================================
   if (DOM.albumActions.btnEdit) {
     DOM.albumActions.btnEdit.addEventListener("click", openEditAlbumModal);
   }
@@ -313,9 +280,6 @@ async function initApp() {
     });
   }
 
-  // ============================================================
-  // FUNCIONES GLOBALES (expuestas para onclicks en HTML)
-  // ============================================================
   window.openAlbumView = openAlbumView;
   window.closeAlbumView = closeAlbumView;
   window.renderPlaylistsSidebarLinks = renderPlaylistsSidebarLinks;
@@ -323,9 +287,6 @@ async function initApp() {
   window.nextRound = nextRound;
   window.openArtistProfile = openArtistProfile;
 
-  // ============================================================
-  // SISTEMA DE RESEÑAS
-  // ============================================================
   initReviewsSystem(
     () => (queue.length ? queue[queueIndex] : null),
     () => {
@@ -366,43 +327,22 @@ async function initApp() {
     },
   );
 
-  // ============================================================
-  // INICIALIZAR PESTAÑAS DE COMUNIDAD (después de que el DOM esté listo)
-  // ============================================================
   initCommunityTabs();
 
-  // ============================================================
-  // RECREAR ICONOS LUCIDE
-  // ============================================================
   if (window.lucide) window.lucide.createIcons();
 
-  console.log("✅ Audiophille inicializado correctamente");
+  console.log("Audiophille inicializado correctamente");
 }
 
-// ============================================================
-// FUNCIONES DE PERFIL
-// ============================================================
 window.loadProfileData = async function loadProfileData() {
-  console.log("🔄 loadProfileData ejecutándose...");
-
-  let tries = 0;
-  while (!document.getElementById("statProfileAvgRating") && tries < 20) {
-    await new Promise((r) => setTimeout(r, 100));
-    tries++;
-  }
-
   const avgElement = document.getElementById("statProfileAvgRating");
   if (!avgElement) {
-    console.error("❌ No se encontró #statProfileAvgRating");
+    console.error("No se encontró #statProfileAvgRating");
     return;
   }
 
   try {
-    // Perfil
-    const profileRes = await fetch(`${window.baseUrl}api.php?action=get_user_profile`, {
-      credentials: "include",
-    });
-    const profile = await profileRes.json();
+    const profile = await getUserProfile();
     if (profile.success) {
       document.getElementById("profileName").innerText = profile.user.nombre_usuario;
       document.getElementById("profileEmail").innerText = profile.user.email;
@@ -417,20 +357,13 @@ window.loadProfileData = async function loadProfileData() {
       }
     }
 
-    // Estadísticas
-    const statsRes = await fetch(`${window.baseUrl}api.php?action=get_user_stats`, {
-      credentials: "include",
-    });
-    const stats = await statsRes.json();
-    console.log("📊 Estadísticas recibidas:", stats);
-
+    const stats = await getUserStats();
     if (stats.success) {
       document.getElementById("statProfileReviews").innerText = stats.total_reviews;
       document.getElementById("statProfileFavorites").innerText = stats.total_favorites;
       document.getElementById("statProfilePlaylists").innerText = stats.total_playlists;
       document.getElementById("statProfileImported").innerText = stats.total_imported;
       avgElement.innerText = stats.avg_rating + " ★";
-      console.log(`✅ Calificación media actualizada a: ${stats.avg_rating} ★`);
     } else {
       console.error("Error en estadísticas:", stats.message);
     }
@@ -439,9 +372,6 @@ window.loadProfileData = async function loadProfileData() {
   }
 };
 
-// ============================================================
-// CONFIGURAR MODAL DE EDICIÓN DE PERFIL
-// ============================================================
 function setupProfileEvents() {
   const editBtn = document.getElementById("editProfileBtn");
   const modal = document.getElementById("editProfileModal");
@@ -455,15 +385,17 @@ function setupProfileEvents() {
   }
 
   editBtn.addEventListener("click", async () => {
-    const profileRes = await fetch(`${window.baseUrl}api.php?action=get_user_profile`, {
-      credentials: "include",
-    });
-    const profile = await profileRes.json();
-    if (profile.success) {
-      document.getElementById("modalEditUsername").value = profile.user.nombre_usuario;
-      document.getElementById("modalEditEmail").value = profile.user.email;
-      document.getElementById("modalEditPassword").value = "";
-      document.getElementById("modalEditAvatar").value = "";
+    try {
+      const profile = await getUserProfile();
+      if (profile.success) {
+        document.getElementById("modalEditUsername").value = profile.user.nombre_usuario;
+        document.getElementById("modalEditEmail").value = profile.user.email;
+        document.getElementById("modalEditPassword").value = "";
+        document.getElementById("modalEditAvatar").value = "";
+      }
+    } catch (err) {
+      console.error("Error al cargar perfil para edición:", err);
+      alert("Error al cargar los datos del perfil");
     }
     modal.classList.remove("hidden");
   });
@@ -476,22 +408,13 @@ function setupProfileEvents() {
   });
 
   saveBtn.addEventListener("click", async () => {
-    const formData = new FormData();
-    formData.append("action", "update_user_profile");
-    formData.append("username", document.getElementById("modalEditUsername").value);
-    formData.append("email", document.getElementById("modalEditEmail").value);
+    const username = document.getElementById("modalEditUsername").value;
+    const email = document.getElementById("modalEditEmail").value;
     const password = document.getElementById("modalEditPassword").value;
-    if (password) formData.append("password", password);
     const avatarFile = document.getElementById("modalEditAvatar").files[0];
-    if (avatarFile) formData.append("avatar", avatarFile);
 
     try {
-      const res = await fetch(`${window.baseUrl}api.php`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-      const data = await res.json();
+      const data = await updateUserProfile(username, email, password, avatarFile);
       if (data.success) {
         alert("Perfil actualizado correctamente");
         closeModal();
@@ -500,14 +423,12 @@ function setupProfileEvents() {
         alert("Error: " + data.message);
       }
     } catch (err) {
+      console.error("Error al actualizar perfil:", err);
       alert("Error de conexión");
     }
   });
 }
 
-// ============================================================
-// ARRANCAR LA APLICACIÓN
-// ============================================================
 document.addEventListener("DOMContentLoaded", () => {
   setupProfileEvents();
   initApp();

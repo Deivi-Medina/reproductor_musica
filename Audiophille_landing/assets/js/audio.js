@@ -2,31 +2,47 @@
 import DOM, { state, formatTimerString } from "./var.js";
 import { renderReviews } from "./reviews.js";
 import { renderQueueSidebarList, renderTrackActiveStylings, updatePlayingUIs } from "./ui.js";
+import { toggleFavorite } from "./services/favoriteService.js";
+import { registerPlay } from "./services/playStatsService.js";
 
-export let audio = new Audio();
+// ============================================================
+// AUDIO ELEMENT
+// ============================================================
+export const audio = new Audio();
 audio.crossOrigin = "anonymous";
 audio.preload = "auto";
 
-let audioCtx = null;
-let audioSource = null;
-let filterBass = null;
-let filterVocals = null;
-let filterTreble = null;
-
+// ============================================================
+// ESTADO DEL REPRODUCTOR
+// ============================================================
 export let queue = [];
 export let queueIndex = 0;
 export let isPlaying = false;
 export let isShuffleActive = false;
 export let isRepeatActive = false;
 let pistaContabilizada = false;
-
 let currentPlayPromise = null;
 
+// ============================================================
+// ESTADO DEL ECUALIZADOR (AudioContext)
+// ============================================================
+let audioCtx = null;
+let audioSource = null;
+let filterBass = null;
+let filterVocals = null;
+let filterTreble = null;
+
+// ============================================================
+// FUNCIONES DE COLA
+// ============================================================
 export function setQueue(newQueue, newIndex = 0) {
   queue = newQueue;
   queueIndex = newIndex;
 }
 
+// ============================================================
+// REPRODUCCIÓN
+// ============================================================
 export async function playActiveSong() {
   if (queue.length === 0) return;
   const song = queue[queueIndex];
@@ -36,12 +52,13 @@ export async function playActiveSong() {
     audio.pause();
     try {
       await currentPlayPromise;
-    } catch (e) {}
+    } catch (_) {}
     currentPlayPromise = null;
   }
 
   audio.src = song.file;
   pistaContabilizada = false;
+
   try {
     currentPlayPromise = audio.play();
     await currentPlayPromise;
@@ -67,7 +84,7 @@ export async function togglePlayPause() {
       if (currentPlayPromise) {
         try {
           await currentPlayPromise;
-        } catch (e) {}
+        } catch (_) {}
         currentPlayPromise = null;
       }
       currentPlayPromise = audio.play();
@@ -102,17 +119,26 @@ export function playPrevTrack() {
   playActiveSong();
 }
 
+// ============================================================
+// SHUFFLE / REPEAT
+// ============================================================
 export function toggleShuffle() {
   isShuffleActive = !isShuffleActive;
-  if (DOM.audioControls.btnShuffle) DOM.audioControls.btnShuffle.classList.toggle("active-control", isShuffleActive);
+  if (DOM.audioControls.btnShuffle) {
+    DOM.audioControls.btnShuffle.classList.toggle("active-control", isShuffleActive);
+  }
 }
 
 export function toggleRepeat() {
   isRepeatActive = !isRepeatActive;
-  if (DOM.audioControls.btnRepeat) DOM.audioControls.btnRepeat.classList.toggle("active-control", isRepeatActive);
+  if (DOM.audioControls.btnRepeat) {
+    DOM.audioControls.btnRepeat.classList.toggle("active-control", isRepeatActive);
+  }
 }
 
-// Función para alternar favorito usando la API
+// ============================================================
+// FAVORITOS (USANDO SERVICIO)
+// ============================================================
 export async function toggleFavoriteStatus() {
   if (queue.length === 0) return;
   const currentSong = queue[queueIndex];
@@ -121,64 +147,55 @@ export async function toggleFavoriteStatus() {
     return;
   }
 
-  const formData = new FormData();
-  formData.append("action", "toggle_favorite");
-  formData.append("id_cancion", currentSong.id_cancion);
-
   try {
-    const response = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-    const data = await response.json();
-    if (data.success) {
+    const result = await toggleFavorite(currentSong.id_cancion);
+    if (result.success) {
       // Actualizar estado local
-      if (data.favorito) {
-        // Agregar a favoritos si no está
+      if (result.favorito) {
         if (!state.favorites.some((s) => s.id_cancion === currentSong.id_cancion)) {
           state.favorites.push(currentSong);
         }
       } else {
-        // Eliminar de favoritos
         state.favorites = state.favorites.filter((s) => s.id_cancion !== currentSong.id_cancion);
       }
-      // Actualizar UI del botón de favorito
+      // Actualizar UI
       updatePlayingUIs(isPlaying);
     } else {
-      console.error("Error al cambiar favorito:", data.message);
+      console.error("Error al cambiar favorito:", result.message);
     }
   } catch (error) {
-    console.error("Error de red:", error);
+    console.error("Error de red al cambiar favorito:", error);
   }
 }
 
-// Registrar reproducción de artista mediante API
-async function registrarReproduccionArtista(track) {
-  if (!track) return;
-  let nombreArtista = track.artistName || "Artista Desconocido";
-  // Si la canción tiene id_artista, lo usamos; si no, enviamos el nombre
-  const formData = new FormData();
-  formData.append("action", "register_play");
-  if (track.id_artista) {
-    formData.append("id_artista", track.id_artista);
-  } else {
-    formData.append("nombre_artista", nombreArtista);
-  }
-  try {
-    await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-  } catch (e) {
-    console.error("Error al registrar reproducción:", e);
-  }
-}
-
+// ============================================================
+// REGISTRO DE REPRODUCCIÓN (USANDO SERVICIO)
+// ============================================================
 function onAudioTimeUpdate() {
   if (!audio.duration) return;
   const progressPercent = (audio.currentTime / audio.duration) * 100;
-  if (DOM.miniPlayer.progressFill) DOM.miniPlayer.progressFill.style.width = `${progressPercent}%`;
-  if (DOM.audioControls.progressFill) DOM.audioControls.progressFill.style.width = `${progressPercent}%`;
-  if (DOM.audioControls.scrubber) DOM.audioControls.scrubber.value = progressPercent;
-  if (DOM.audioControls.timeCurrent) DOM.audioControls.timeCurrent.innerText = formatTimerString(audio.currentTime);
-  if (DOM.audioControls.timeTotal) DOM.audioControls.timeTotal.innerText = formatTimerString(audio.duration);
 
+  // Actualizar UI de progreso
+  if (DOM.miniPlayer.progressFill) {
+    DOM.miniPlayer.progressFill.style.width = `${progressPercent}%`;
+  }
+  if (DOM.audioControls.progressFill) {
+    DOM.audioControls.progressFill.style.width = `${progressPercent}%`;
+  }
+  if (DOM.audioControls.scrubber) {
+    DOM.audioControls.scrubber.value = progressPercent;
+  }
+  if (DOM.audioControls.timeCurrent) {
+    DOM.audioControls.timeCurrent.innerText = formatTimerString(audio.currentTime);
+  }
+  if (DOM.audioControls.timeTotal) {
+    DOM.audioControls.timeTotal.innerText = formatTimerString(audio.duration);
+  }
+
+  // Registrar reproducción al 70% (solo una vez por canción)
   if (progressPercent >= 70 && !pistaContabilizada && queue.length > 0) {
-    registrarReproduccionArtista(queue[queueIndex]);
+    const track = queue[queueIndex];
+    registerPlay(track); // Servicio centralizado
     pistaContabilizada = true;
   }
 }
@@ -192,53 +209,73 @@ function onAudioEnded() {
   }
 }
 
+// ============================================================
+// EVENTOS DEL AUDIO
+// ============================================================
 export function bindAudioEvents() {
   audio.addEventListener("timeupdate", onAudioTimeUpdate);
   audio.addEventListener("ended", onAudioEnded);
 }
 
-// Ecualizador
+// ============================================================
+// ECUALIZADOR (AudioContext)
+// ============================================================
 function initAudioContext() {
   if (audioCtx) return;
   const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioCtxClass) return;
+
   try {
     audioCtx = new AudioCtxClass();
     audioSource = audioCtx.createMediaElementSource(audio);
+
     filterBass = audioCtx.createBiquadFilter();
     filterBass.type = "lowshelf";
     filterBass.frequency.value = 150;
     filterBass.gain.value = parseFloat(DOM.equalizer.bassSlider?.value || 0);
+
     filterVocals = audioCtx.createBiquadFilter();
     filterVocals.type = "peaking";
     filterVocals.frequency.value = 1500;
     filterVocals.Q.value = 1.0;
     filterVocals.gain.value = parseFloat(DOM.equalizer.vocalsSlider?.value || 0);
+
     filterTreble = audioCtx.createBiquadFilter();
     filterTreble.type = "highshelf";
     filterTreble.frequency.value = 6000;
     filterTreble.gain.value = parseFloat(DOM.equalizer.trebleSlider?.value || 0);
+
     audioSource.connect(filterBass);
     filterBass.connect(filterVocals);
     filterVocals.connect(filterTreble);
     filterTreble.connect(audioCtx.destination);
   } catch (e) {
-    console.error(e);
+    console.error("Error al inicializar AudioContext:", e);
   }
 }
 
 export function prepareAudio() {
   initAudioContext();
-  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  if (audioCtx && audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
 }
 
 export function updateEqualizerNodeValues() {
   const bassVal = parseFloat(DOM.equalizer.bassSlider?.value || 0);
   const vocalsVal = parseFloat(DOM.equalizer.vocalsSlider?.value || 0);
   const trebleVal = parseFloat(DOM.equalizer.trebleSlider?.value || 0);
-  if (DOM.equalizer.lblBass) DOM.equalizer.lblBass.innerText = `${bassVal > 0 ? "+" : ""}${bassVal} dB`;
-  if (DOM.equalizer.lblVocals) DOM.equalizer.lblVocals.innerText = `${vocalsVal > 0 ? "+" : ""}${vocalsVal} dB`;
-  if (DOM.equalizer.lblTreble) DOM.equalizer.lblTreble.innerText = `${trebleVal > 0 ? "+" : ""}${trebleVal} dB`;
+
+  if (DOM.equalizer.lblBass) {
+    DOM.equalizer.lblBass.innerText = `${bassVal > 0 ? "+" : ""}${bassVal} dB`;
+  }
+  if (DOM.equalizer.lblVocals) {
+    DOM.equalizer.lblVocals.innerText = `${vocalsVal > 0 ? "+" : ""}${vocalsVal} dB`;
+  }
+  if (DOM.equalizer.lblTreble) {
+    DOM.equalizer.lblTreble.innerText = `${trebleVal > 0 ? "+" : ""}${trebleVal} dB`;
+  }
+
   if (filterBass) filterBass.gain.value = bassVal;
   if (filterVocals) filterVocals.gain.value = vocalsVal;
   if (filterTreble) filterTreble.gain.value = trebleVal;

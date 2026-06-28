@@ -1,9 +1,10 @@
 // js/playlist.js
 import DOM, { state, loadInitialData } from "./var.js";
 import { showSection } from "./navigation.js";
-import { renderAlbumCards } from "./ui.js";
+import { renderAlbumCards, refreshUI as refreshUIFromUi } from "./ui.js";
 import { setQueue, playActiveSong } from "./audio.js";
 import { showAlert, showConfirm } from "./modals.js";
+import { createPlaylist, updatePlaylist, deletePlaylist } from "./services/playlistService.js";
 
 window.tempCoverFile = null;
 
@@ -63,19 +64,10 @@ export async function createPlaylistAction() {
     await showAlert(`Ya existe una playlist llamada "${pName}". Elige otro nombre.`, "Nombre duplicado");
     return;
   }
-  const formData = new FormData();
-  formData.append("action", "create_playlist");
-  formData.append("nombre", pName);
   const file = DOM.modal.imgInput?.files[0];
-  if (file) formData.append("portada_file", file);
 
   try {
-    const response = await fetch(`${window.baseUrl}api.php`, {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
-    const data = await response.json();
+    const data = await createPlaylist(pName, file);
     if (data.success) {
       await refreshUI();
       closePlaylistModal();
@@ -120,27 +112,11 @@ export async function confirmEditPlaylistChanges(oldName, nextName, nextCover, t
     return;
   }
 
-  const formData = new FormData();
-  formData.append("action", "update_playlist");
-  formData.append("id_playlist", playlistId);
-  formData.append("nombre", nextName);
-
-  if (coverFile) {
-    formData.append("cover_file", coverFile);
-  } else if (nextCover) {
-    formData.append("portada_url", nextCover);
-  }
-
+  const coverFileToSend = coverFile || window.tempCoverFile || null;
   const songIds = tempSongs.map((s) => s.id_cancion).filter((id) => id);
-  formData.append("canciones", JSON.stringify(songIds));
 
   try {
-    const response = await fetch(`${window.baseUrl}api.php`, {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
-    const data = await response.json();
+    const data = await updatePlaylist(playlistId, nextName, coverFileToSend, nextCover, songIds);
     if (data.success) {
       await refreshUI();
       showSection(`playlist:${nextName}`);
@@ -172,16 +148,8 @@ export async function deleteActivePlaylist() {
   }
   const confirmed = await showConfirm(`¿Eliminar playlist "${playlistName}"?`, "Eliminar playlist", "Eliminar", "Cancelar", true);
   if (confirmed) {
-    const formData = new FormData();
-    formData.append("action", "delete_playlist");
-    formData.append("id_playlist", playlistId);
     try {
-      const response = await fetch(`${window.baseUrl}api.php`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-      const data = await response.json();
+      const data = await deletePlaylist(playlistId);
       if (data.success) {
         await refreshUI();
         showSection("home");
@@ -197,7 +165,7 @@ export async function deleteActivePlaylist() {
 
 function escapeHtml(str) {
   if (!str) return "";
-  return str.replace(/[&<>]/g, function (m) {
+  return str.replace(/[&<>]/g, (m) => {
     if (m === "&") return "&amp;";
     if (m === "<") return "&lt;";
     if (m === ">") return "&gt;";

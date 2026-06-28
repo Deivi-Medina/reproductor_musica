@@ -1,10 +1,20 @@
 // assets/js/social/feed.js
+import { getFeed } from "../services/feedService.js";
+
 let feedOffset = 0;
 const FEED_LIMIT = 20;
 let isLoading = false;
 let hasMore = true;
 let currentFilter = "all";
 let feedObserver = null;
+
+// ✅ MAPEO DE FILTROS (frontend → backend)
+const FILTER_MAP = {
+  all: "all",
+  playlist: "playlist_creada",
+  review: "reseña",
+  follow: "seguimiento",
+};
 
 export async function loadFeed(reset = true) {
   if (isLoading) return;
@@ -14,9 +24,8 @@ export async function loadFeed(reset = true) {
   const end = document.getElementById("feedEnd");
   const empty = document.getElementById("feedEmpty");
 
-  // Si no existe el contenedor, salir
   if (!container) {
-    console.warn("⚠️ feedList no encontrado en el DOM");
+    console.warn("feedList no encontrado en el DOM");
     return;
   }
 
@@ -25,7 +34,6 @@ export async function loadFeed(reset = true) {
     hasMore = true;
     container.innerHTML = "";
     if (end) end.classList.add("hidden");
-    // Mostrar estado de carga inicial
     const loadingDiv = document.createElement("div");
     loadingDiv.id = "feedLoadingState";
     loadingDiv.className = "feed-loading-state";
@@ -37,11 +45,10 @@ export async function loadFeed(reset = true) {
   if (loader) loader.classList.remove("hidden");
 
   try {
-    const url = `${window.baseUrl}api.php?action=get_feed&limit=${FEED_LIMIT}&offset=${feedOffset}&filter=${currentFilter}`;
-    const response = await fetch(url, { credentials: "include" });
-    const data = await response.json();
+    // ✅ Usar el filtro mapeado o el original si no está en el mapa
+    const filterToSend = FILTER_MAP[currentFilter] || currentFilter;
+    const data = await getFeed(FEED_LIMIT, feedOffset, filterToSend);
 
-    // Remover estado de carga
     const loadingState = document.getElementById("feedLoadingState");
     if (loadingState) loadingState.remove();
 
@@ -52,13 +59,20 @@ export async function loadFeed(reset = true) {
       return;
     }
 
-    // Si no hay publicaciones
     if (data.feed.length === 0) {
       if (reset) {
+        const filterNames = {
+          all: "actividad",
+          playlist_creada: "playlists",
+          reseña: "reseñas",
+          seguimiento: "seguidores",
+        };
+        const filterName = filterNames[filterToSend] || "actividad";
+
         container.innerHTML = `
                     <div class="feed-empty">
                         <i data-lucide="users" class="feed-empty-icon"></i>
-                        <h3>Tu feed está vacío</h3>
+                        <h3>No hay ${filterName} en tu feed</h3>
                         <p>Sigue a otros usuarios para ver su actividad aquí</p>
                         <button class="btn-primary feed-empty-btn" onclick="document.querySelector('[data-tab=\\'explore\\']')?.click()">
                             <i data-lucide="compass"></i> Explorar usuarios
@@ -72,10 +86,8 @@ export async function loadFeed(reset = true) {
       return;
     }
 
-    // Si hay publicaciones, ocultar el mensaje vacío
     if (empty) empty.classList.add("hidden");
 
-    // Renderizar cada publicación
     data.feed.forEach((item) => {
       const feedItem = createFeedItem(item);
       if (feedItem) {
@@ -86,7 +98,6 @@ export async function loadFeed(reset = true) {
     feedOffset += data.feed.length;
     hasMore = data.feed.length === FEED_LIMIT;
 
-    // Actualizar estado de fin
     if (end) {
       if (hasMore) {
         end.classList.add("hidden");
@@ -95,11 +106,9 @@ export async function loadFeed(reset = true) {
       }
     }
 
-    // Recrear iconos Lucide
     if (window.lucide) window.lucide.createIcons();
   } catch (error) {
     console.error("Error al cargar feed:", error);
-    // Remover estado de carga si existe
     const loadingState = document.getElementById("feedLoadingState");
     if (loadingState) loadingState.remove();
     if (reset) {
@@ -111,11 +120,6 @@ export async function loadFeed(reset = true) {
   }
 }
 
-/**
- * Crear un elemento DOM para una publicación del feed
- * @param {Object} item - Datos de la publicación
- * @returns {HTMLElement|null} - Elemento DOM o null si hay error
- */
 function createFeedItem(item) {
   if (!item || !item.id_usuario) {
     console.warn("Item inválido:", item);
@@ -168,17 +172,13 @@ function createFeedItem(item) {
   return div;
 }
 
-/**
- * Configurar el scroll infinito para el feed
- */
 export function setupFeedInfiniteScroll() {
   const endElement = document.getElementById("feedEnd");
   if (!endElement) {
-    console.warn("⚠️ feedEnd no encontrado en el DOM");
+    console.warn("feedEnd no encontrado en el DOM");
     return;
   }
 
-  // Desconectar observer anterior si existe
   if (feedObserver) {
     feedObserver.disconnect();
     feedObserver = null;
@@ -199,17 +199,14 @@ export function setupFeedInfiniteScroll() {
   feedObserver.observe(endElement);
 }
 
-/**
- * Filtrar el feed por tipo
- */
+// ✅ FILTRO CON MAPEO CORRECTO
 export function filterFeed(filter) {
+  // Guardamos el valor original para la UI
   currentFilter = filter;
+  // Recargamos con el filtro mapeado
   loadFeed(true);
 }
 
-/**
- * Obtener tiempo relativo
- */
 function getTimeAgo(date) {
   if (!date || isNaN(date.getTime())) return "hace un momento";
   const now = new Date();
@@ -221,12 +218,9 @@ function getTimeAgo(date) {
   return date.toLocaleDateString();
 }
 
-/**
- * Escapar HTML para prevenir XSS
- */
 function escapeHtml(str) {
   if (!str) return "";
-  return str.replace(/[&<>"]/g, function (m) {
+  return str.replace(/[&<>"]/g, (m) => {
     if (m === "&") return "&amp;";
     if (m === "<") return "&lt;";
     if (m === ">") return "&gt;";

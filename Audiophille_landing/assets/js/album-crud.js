@@ -4,10 +4,17 @@ import { renderAlbumCards, openAlbumView } from "./ui.js";
 import { showSection } from "./navigation.js";
 import { openEditPlaylistModal, deleteActivePlaylist } from "./playlist.js";
 import { showAlert, showConfirm } from "./modals.js";
+import { post } from "./api.js"; // 👈 NUEVO: importar el servicio centralizado
 
+// ============================================================
+// ESTADO LOCAL
+// ============================================================
 let editAlbumTempSongs = [];
 let tempCoverFile = null;
 
+// ============================================================
+// FUNCIONES AUXILIARES (UI y estado)
+// ============================================================
 function getAlbums() {
   return window.albumsFromDB || [];
 }
@@ -25,8 +32,11 @@ async function refreshDataAndUI() {
   }
 }
 
+// ============================================================
+// LISTENER PARA SUBIDA DE IMAGEN (SOLO UI)
+// ============================================================
 if (DOM.editAlbumModal?.coverFileInput) {
-  DOM.editAlbumModal.coverFileInput.addEventListener("change", function (e) {
+  DOM.editAlbumModal.coverFileInput.addEventListener("change", function () {
     const file = this.files[0];
     if (file) {
       tempCoverFile = file;
@@ -50,6 +60,52 @@ if (DOM.editAlbumModal?.coverFileInput) {
   });
 }
 
+// ============================================================
+// FUNCIONES DE NEGOCIO (LLAMADAS A LA API)
+// ============================================================
+async function updatePlaylist(playlistId, nombre, coverFile, coverUrl, songIds) {
+  const formData = new FormData();
+  formData.append("action", "update_playlist");
+  formData.append("id_playlist", playlistId);
+  formData.append("nombre", nombre);
+
+  if (coverFile) {
+    formData.append("cover_file", coverFile);
+  } else if (coverUrl) {
+    formData.append("portada_url", coverUrl);
+  }
+
+  formData.append("canciones", JSON.stringify(songIds));
+
+  // Usamos el servicio centralizado con FormData
+  return post("update_playlist", formData);
+}
+
+async function updateAlbum(albumId, titulo, artista, coverFile, coverUrl, songsData) {
+  const formData = new FormData();
+  formData.append("action", "update_album");
+  formData.append("id_album", albumId);
+  formData.append("titulo", titulo);
+  formData.append("artista", artista);
+
+  if (coverFile) {
+    formData.append("cover_file", coverFile);
+  } else if (coverUrl) {
+    formData.append("caratula", coverUrl);
+  }
+
+  formData.append("canciones", JSON.stringify(songsData));
+
+  return post("update_album", formData);
+}
+
+async function deleteAlbum(albumId) {
+  return post("delete_album", { id_album: albumId });
+}
+
+// ============================================================
+// EXPORTACIONES (UI)
+// ============================================================
 export async function openEditAlbumModal() {
   if (state.activePlaylistName) {
     openEditPlaylistModal();
@@ -142,6 +198,9 @@ export function handleEditAlbumAddLocalSong(file) {
   renderEditAlbumSongsList();
 }
 
+// ============================================================
+// CONFIRMAR CAMBIOS (USANDO LAS FUNCIONES DE NEGOCIO)
+// ============================================================
 export async function confirmEditAlbumChanges() {
   // ---- CASO PLAYLIST ----
   if (state.activePlaylistName) {
@@ -157,30 +216,12 @@ export async function confirmEditAlbumChanges() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("action", "update_playlist");
-    formData.append("id_playlist", playlist.id_playlist);
-    formData.append("nombre", nextName);
-
-    if (tempCoverFile) {
-      formData.append("cover_file", tempCoverFile);
-    } else {
-      const coverUrl = DOM.editAlbumModal.inputCover?.value.trim();
-      if (coverUrl) {
-        formData.append("portada_url", coverUrl);
-      }
-    }
-
+    const coverFile = tempCoverFile;
+    const coverUrl = DOM.editAlbumModal.inputCover?.value.trim();
     const songIds = editAlbumTempSongs.map((s) => s.id_cancion).filter((id) => id);
-    formData.append("canciones", JSON.stringify(songIds));
 
     try {
-      const response = await fetch(`${window.baseUrl}api.php`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-      const data = await response.json();
+      const data = await updatePlaylist(playlist.id_playlist, nextName, coverFile, coverUrl, songIds);
       if (data.success) {
         await refreshDataAndUI();
         closeEditAlbumModal();
@@ -217,37 +258,20 @@ export async function confirmEditAlbumChanges() {
     return;
   }
 
-  const formData = new FormData();
-  formData.append("action", "update_album");
-  formData.append("id_album", album.id_album);
-  formData.append("titulo", nextTitle);
-  formData.append("artista", nextArtist);
-
-  if (tempCoverFile) {
-    formData.append("cover_file", tempCoverFile);
-  } else if (nextCover) {
-    formData.append("caratula", nextCover);
-  }
-
+  const coverFile = tempCoverFile;
   const songsData = editAlbumTempSongs.map((s) => ({
     trackTitle: s.trackTitle || "Pista sin título",
     file: s.file,
     id_cancion: s.id_cancion || null,
   }));
-  formData.append("canciones", JSON.stringify(songsData));
 
   try {
-    const response = await fetch(`${window.baseUrl}api.php`, {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
-    const data = await response.json();
+    const data = await updateAlbum(album.id_album, nextTitle, nextArtist, coverFile, nextCover, songsData);
     if (data.success) {
       await refreshDataAndUI();
       closeEditAlbumModal();
       const newAlbums = getAlbums();
-      const newIndex = newAlbums.findIndex((a) => a.id_album == album.id_album);
+      const newIndex = newAlbums.findIndex((a) => a.id_album === album.id_album);
       if (newIndex !== -1) openAlbumView(newIndex);
       tempCoverFile = null;
       const preview = document.getElementById("editCoverPreview");
@@ -264,6 +288,9 @@ export async function confirmEditAlbumChanges() {
   }
 }
 
+// ============================================================
+// ELIMINAR ÁLBUM
+// ============================================================
 export async function deleteActiveAlbum() {
   if (state.activePlaylistName) {
     await deleteActivePlaylist();
@@ -280,12 +307,8 @@ export async function deleteActiveAlbum() {
   }
   const confirmed = await showConfirm(`¿Eliminar álbum "${album.title}"?`, "Eliminar álbum", "Eliminar", "Cancelar", true);
   if (confirmed) {
-    const formData = new FormData();
-    formData.append("action", "delete_album");
-    formData.append("id_album", album.id_album);
     try {
-      const response = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
-      const data = await response.json();
+      const data = await deleteAlbum(album.id_album);
       if (data.success) {
         await refreshDataAndUI();
         showSection("home");

@@ -3,8 +3,8 @@ import { state, loadInitialData } from "../var.js";
 import { renderAlbumCards, renderPlaylistDetailView } from "../ui.js";
 import { renderPlaylistsSidebarLinks } from "../playlist.js";
 import { showAlert, showConfirm } from "../modals.js";
+import { addPlaylistToLibraryAPI, mergePlaylistsAPI, checkFriendsAPI, checkMergedPlaylistAPI } from "../services/socialService.js";
 
-// Función central para refrescar toda la UI después de cambios en playlists
 async function refreshAllUI() {
   try {
     await loadInitialData();
@@ -21,18 +21,7 @@ async function refreshAllUI() {
 
 export async function addPlaylistToLibrary(playlistId, playlistName) {
   try {
-    const response = await fetch(`${window.baseUrl}api.php`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "add_playlist_to_library",
-        playlist_id: playlistId,
-      }),
-      credentials: "include",
-    });
-
-    const data = await response.json();
-
+    const data = await addPlaylistToLibraryAPI(playlistId);
     if (data.success) {
       await showAlert(
         `<strong>✅ Playlist añadida!</strong><br><br>La playlist "<strong>${data.nombre}</strong>" se ha añadido a tu biblioteca.`,
@@ -53,6 +42,16 @@ export async function addPlaylistToLibrary(playlistId, playlistName) {
 
 export async function mergePlaylistsWithFriend(friendId, friendName) {
   try {
+    // Verificar si ya existe una playlist fusionada con este amigo
+    const checkData = await checkMergedPlaylistAPI(friendId);
+    if (checkData.success && checkData.exists) {
+      await showAlert(
+        `⚠️ Ya tienes una playlist fusionada con "${friendName}".<br><br>Puedes editarla desde tu biblioteca.`,
+        "Playlist existente",
+      );
+      return false;
+    }
+
     const confirm = await showConfirm(
       `¿Quieres fusionar tus playlists con las de "<strong>${friendName}</strong>"?<br><br>Se creará una playlist combinando las mejores canciones de ambos.`,
       "Fusionar Playlists",
@@ -63,17 +62,7 @@ export async function mergePlaylistsWithFriend(friendId, friendName) {
 
     if (!confirm) return false;
 
-    const response = await fetch(`${window.baseUrl}api.php`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "merge_playlists",
-        friend_id: friendId,
-      }),
-      credentials: "include",
-    });
-
-    const data = await response.json();
+    const data = await mergePlaylistsAPI(friendId);
 
     if (data.success) {
       let mensaje = `<strong>✅ Playlist fusionada creada exitosamente!</strong><br><br>`;
@@ -100,10 +89,7 @@ export async function mergePlaylistsWithFriend(friendId, friendName) {
 
 export async function checkAreFriends(userId) {
   try {
-    const response = await fetch(`${window.baseUrl}api.php?action=check_friends&user_id=${userId}`, {
-      credentials: "include",
-    });
-    const data = await response.json();
+    const data = await checkFriendsAPI(userId);
     return data.success && data.are_friends;
   } catch (error) {
     console.error("Error verificando amistad:", error);
