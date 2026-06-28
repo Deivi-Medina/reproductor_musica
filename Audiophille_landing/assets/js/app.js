@@ -36,9 +36,15 @@ import { loadReviewsFromAPI, initReviewsSystem, updateDiarySongsSelector, render
 import { showSection } from "./navigation.js";
 import { initGameDOM, startGame, stopGame, nextRound } from "./game.js";
 import { openArtistProfile } from "./artists.js";
+// 👇 NUEVO: Importar comunidad
+import { initCommunityTabs } from "./community.js";
+import { openPublicProfile } from "./social/profiles.js";
 
-// Inicialización asíncrona
+// ============================================================
+// INICIALIZACIÓN PRINCIPAL
+// ============================================================
 async function initApp() {
+  // Mostrar loader
   const loader = document.createElement("div");
   loader.id = "app-loader";
   loader.textContent = "Cargando tu biblioteca musical...";
@@ -46,6 +52,7 @@ async function initApp() {
     "position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); color:white; padding:1rem 2rem; border-radius:30px; z-index:10000; backdrop-filter:blur(10px);";
   document.body.appendChild(loader);
 
+  // Cargar datos iniciales
   const success = await loadInitialData();
   if (!success) {
     alert("Error al cargar los datos. Intenta recargar la página.");
@@ -54,87 +61,152 @@ async function initApp() {
   }
   loader.remove();
 
+  // Renderizar elementos iniciales
   renderPlaylistsSidebarLinks();
   renderAlbumCards();
   bindAudioEvents();
   initKeyboardControls();
   initGameDOM();
 
-  // Listeners de navegación
-  if (DOM.sidebar.navHome) DOM.sidebar.navHome.addEventListener("click", () => showSection("home"));
-  if (DOM.sidebar.navFavorites) DOM.sidebar.navFavorites.addEventListener("click", () => showSection("favorites"));
-  if (DOM.sidebar.navDiary) DOM.sidebar.navDiary.addEventListener("click", () => showSection("diary"));
-
-  // -------------------- CORRECCIÓN DEL JUEGO --------------------
+  // ============================================================
+  // LISTENERS DE NAVEGACIÓN (sidebar)
+  // ============================================================
+  if (DOM.sidebar.navHome) {
+    DOM.sidebar.navHome.addEventListener("click", () => showSection("home"));
+  }
+  if (DOM.sidebar.navFavorites) {
+    DOM.sidebar.navFavorites.addEventListener("click", () => showSection("favorites"));
+  }
+  if (DOM.sidebar.navDiary) {
+    DOM.sidebar.navDiary.addEventListener("click", () => showSection("diary"));
+  }
   if (DOM.sidebar.navGame) {
     DOM.sidebar.navGame.addEventListener("click", () => {
-      console.log("🎮 Click en Juego");
       showSection("game");
-      // Esperamos a que el DOM del juego esté visible antes de iniciarlo
       setTimeout(() => {
-        if (typeof startGame === "function") {
-          console.log("🟢 Iniciando juego...");
-          startGame();
-        } else {
-          console.warn("⚠️ startGame no está definida");
-        }
+        if (typeof startGame === "function") startGame();
       }, 100);
     });
   }
-  // -------------------------------------------------------------
-
   if (DOM.sidebar.navProfile) {
     DOM.sidebar.navProfile.addEventListener("click", () => {
       showSection("profile");
       setTimeout(() => {
-        if (typeof window.loadProfileData === "function") {
-          window.loadProfileData();
-        }
+        if (typeof window.loadProfileData === "function") window.loadProfileData();
       }, 100);
     });
   }
-  if (DOM.sidebar.btnCreatePlaylist) DOM.sidebar.btnCreatePlaylist.addEventListener("click", openPlaylistModal);
-  if (DOM.modal.btnClose) DOM.modal.btnClose.addEventListener("click", closePlaylistModal);
-  if (DOM.modal.btnCancel) DOM.modal.btnCancel.addEventListener("click", closePlaylistModal);
-  if (DOM.modal.btnConfirm) DOM.modal.btnConfirm.addEventListener("click", createPlaylistAction);
+  // 👇 NUEVO: Listener para Comunidad
+  if (DOM.sidebar.navCommunity) {
+    DOM.sidebar.navCommunity.addEventListener("click", () => {
+      showSection("community");
+    });
+  }
 
-  document.addEventListener("click", () => DOM.contextMenu.container?.classList.add("hidden"));
+  // ============================================================
+  // PLAYSLISTS (crear, cerrar modales)
+  // ============================================================
+  if (DOM.sidebar.btnCreatePlaylist) {
+    DOM.sidebar.btnCreatePlaylist.addEventListener("click", openPlaylistModal);
+  }
+  if (DOM.modal.btnClose) {
+    DOM.modal.btnClose.addEventListener("click", closePlaylistModal);
+  }
+  if (DOM.modal.btnCancel) {
+    DOM.modal.btnCancel.addEventListener("click", closePlaylistModal);
+  }
+  if (DOM.modal.btnConfirm) {
+    DOM.modal.btnConfirm.addEventListener("click", createPlaylistAction);
+  }
+
+  // ============================================================
+  // MENÚ CONTEXTUAL
+  // ============================================================
+  document.addEventListener("click", () => {
+    DOM.contextMenu.container?.classList.add("hidden");
+  });
   if (DOM.contextMenu.container) {
     DOM.contextMenu.container.addEventListener("click", (e) => {
       const target = e.target.closest(".context-option");
       if (!target) return;
-      if (target.id === "ctxAddToQueue") addContextSongToQueue();
-      else if (target.dataset.playlistName) addContextSongToSpecificPlaylist(target.dataset.playlistName);
+      if (target.id === "ctxAddToQueue") {
+        addContextSongToQueue();
+      } else if (target.dataset.playlistName) {
+        addContextSongToSpecificPlaylist(target.dataset.playlistName);
+      }
       DOM.contextMenu.container.classList.add("hidden");
     });
   }
 
-  // Controles de audio
-  if (DOM.audioControls.volSlider) DOM.audioControls.volSlider.addEventListener("input", (e) => (audio.volume = e.target.value / 100));
-  if (DOM.audioControls.btnPlay) DOM.audioControls.btnPlay.addEventListener("click", togglePlayPause);
-  if (DOM.miniPlayer.btnPlay) DOM.miniPlayer.btnPlay.addEventListener("click", togglePlayPause);
-  if (DOM.audioControls.btnNext) DOM.audioControls.btnNext.addEventListener("click", playNextTrack);
-  if (DOM.audioControls.btnPrev) DOM.audioControls.btnPrev.addEventListener("click", playPrevTrack);
-  if (DOM.audioControls.btnShuffle) DOM.audioControls.btnShuffle.addEventListener("click", toggleShuffle);
-  if (DOM.audioControls.btnRepeat) DOM.audioControls.btnRepeat.addEventListener("click", toggleRepeat);
-  if (DOM.fullPlayer.btnFavorite) DOM.fullPlayer.btnFavorite.addEventListener("click", toggleFavoriteStatus);
-
-  if (DOM.audioControls.scrubber)
-    DOM.audioControls.scrubber.addEventListener("input", (e) => {
-      if (audio.duration) audio.currentTime = (e.target.value / 100) * audio.duration;
+  // ============================================================
+  // CONTROLES DE AUDIO (reproductor)
+  // ============================================================
+  if (DOM.audioControls.volSlider) {
+    DOM.audioControls.volSlider.addEventListener("input", (e) => {
+      audio.volume = e.target.value / 100;
     });
-  if (DOM.views.searchBar) DOM.views.searchBar.addEventListener("input", (e) => renderAlbumCards(e.target.value));
+  }
+  if (DOM.audioControls.btnPlay) {
+    DOM.audioControls.btnPlay.addEventListener("click", togglePlayPause);
+  }
+  if (DOM.miniPlayer.btnPlay) {
+    DOM.miniPlayer.btnPlay.addEventListener("click", togglePlayPause);
+  }
+  if (DOM.audioControls.btnNext) {
+    DOM.audioControls.btnNext.addEventListener("click", playNextTrack);
+  }
+  if (DOM.audioControls.btnPrev) {
+    DOM.audioControls.btnPrev.addEventListener("click", playPrevTrack);
+  }
+  if (DOM.audioControls.btnShuffle) {
+    DOM.audioControls.btnShuffle.addEventListener("click", toggleShuffle);
+  }
+  if (DOM.audioControls.btnRepeat) {
+    DOM.audioControls.btnRepeat.addEventListener("click", toggleRepeat);
+  }
+  if (DOM.fullPlayer.btnFavorite) {
+    DOM.fullPlayer.btnFavorite.addEventListener("click", toggleFavoriteStatus);
+  }
 
+  // Barra de progreso
+  if (DOM.audioControls.scrubber) {
+    DOM.audioControls.scrubber.addEventListener("input", (e) => {
+      if (audio.duration) {
+        audio.currentTime = (e.target.value / 100) * audio.duration;
+      }
+    });
+  }
+
+  // Búsqueda global
+  if (DOM.views.searchBar) {
+    DOM.views.searchBar.addEventListener("input", (e) => {
+      renderAlbumCards(e.target.value);
+    });
+  }
+
+  // ============================================================
+  // REPRODUCTOR COMPLETO (minimizar/expandir)
+  // ============================================================
   window.expandFullPlayer = () => {
-    if (DOM.fullPlayer.container) DOM.fullPlayer.container.classList.remove("hidden");
-    if (DOM.sidebar.navDiary) DOM.sidebar.navDiary.classList.add("hidden");
+    if (DOM.fullPlayer.container) {
+      DOM.fullPlayer.container.classList.remove("hidden");
+    }
+    if (DOM.sidebar.navDiary) {
+      DOM.sidebar.navDiary.classList.add("hidden");
+    }
   };
   window.minimizeFullPlayer = () => {
-    if (DOM.fullPlayer.container) DOM.fullPlayer.container.classList.add("hidden");
-    if (DOM.sidebar.navDiary) DOM.sidebar.navDiary.classList.remove("hidden");
+    if (DOM.fullPlayer.container) {
+      DOM.fullPlayer.container.classList.add("hidden");
+    }
+    if (DOM.sidebar.navDiary) {
+      DOM.sidebar.navDiary.classList.remove("hidden");
+    }
   };
 
-  // Ecualizador
+  // ============================================================
+  // ECUALIZADOR
+  // ============================================================
   if (DOM.equalizer.btnToggle && DOM.equalizer.sidebar) {
     DOM.equalizer.btnToggle.addEventListener("click", () => {
       DOM.equalizer.sidebar.classList.toggle("collapsed");
@@ -153,9 +225,15 @@ async function initApp() {
       }
     });
   }
-  if (DOM.equalizer.bassSlider) DOM.equalizer.bassSlider.addEventListener("input", updateEqualizerNodeValues);
-  if (DOM.equalizer.vocalsSlider) DOM.equalizer.vocalsSlider.addEventListener("input", updateEqualizerNodeValues);
-  if (DOM.equalizer.trebleSlider) DOM.equalizer.trebleSlider.addEventListener("input", updateEqualizerNodeValues);
+  if (DOM.equalizer.bassSlider) {
+    DOM.equalizer.bassSlider.addEventListener("input", updateEqualizerNodeValues);
+  }
+  if (DOM.equalizer.vocalsSlider) {
+    DOM.equalizer.vocalsSlider.addEventListener("input", updateEqualizerNodeValues);
+  }
+  if (DOM.equalizer.trebleSlider) {
+    DOM.equalizer.trebleSlider.addEventListener("input", updateEqualizerNodeValues);
+  }
   if (DOM.equalizer.btnReset) {
     DOM.equalizer.btnReset.addEventListener("click", () => {
       if (DOM.equalizer.bassSlider) DOM.equalizer.bassSlider.value = 0;
@@ -166,12 +244,18 @@ async function initApp() {
     });
   }
 
-  // Asistente musik
+  // ============================================================
+  // ASISTENTE MUSIK
+  // ============================================================
   if (DOM.musikWidget.btnTrigger && DOM.musikWidget.chatWindow) {
-    DOM.musikWidget.btnTrigger.addEventListener("click", () => DOM.musikWidget.chatWindow.classList.toggle("musik-hidden"));
+    DOM.musikWidget.btnTrigger.addEventListener("click", () => {
+      DOM.musikWidget.chatWindow.classList.toggle("musik-hidden");
+    });
   }
   if (DOM.musikWidget.btnMinimize && DOM.musikWidget.chatWindow) {
-    DOM.musikWidget.btnMinimize.addEventListener("click", () => DOM.musikWidget.chatWindow.classList.add("musik-hidden"));
+    DOM.musikWidget.btnMinimize.addEventListener("click", () => {
+      DOM.musikWidget.chatWindow.classList.add("musik-hidden");
+    });
   }
   if (DOM.musikWidget.btnExpand && DOM.musikWidget.chatWindow) {
     DOM.musikWidget.btnExpand.addEventListener("click", () => {
@@ -181,31 +265,57 @@ async function initApp() {
       if (window.lucide) window.lucide.createIcons();
     });
   }
-  if (DOM.musikChat.btnSend) DOM.musikChat.btnSend.addEventListener("click", triggerChatAction);
-  if (DOM.musikChat.input)
+  if (DOM.musikChat.btnSend) {
+    DOM.musikChat.btnSend.addEventListener("click", triggerChatAction);
+  }
+  if (DOM.musikChat.input) {
     DOM.musikChat.input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") triggerChatAction();
     });
-  if (DOM.musikChat.btnImport) DOM.musikChat.btnImport.addEventListener("click", () => DOM.musikChat.fileInput?.click());
-  if (DOM.musikChat.fileInput) DOM.musikChat.fileInput.addEventListener("change", handleLocalFileImport);
+  }
+  if (DOM.musikChat.btnImport) {
+    DOM.musikChat.btnImport.addEventListener("click", () => DOM.musikChat.fileInput?.click());
+  }
+  if (DOM.musikChat.fileInput) {
+    DOM.musikChat.fileInput.addEventListener("change", handleLocalFileImport);
+  }
 
-  // Edición de álbumes
-  if (DOM.albumActions.btnEdit) DOM.albumActions.btnEdit.addEventListener("click", openEditAlbumModal);
-  if (DOM.albumActions.btnDelete) DOM.albumActions.btnDelete.addEventListener("click", deleteActiveAlbum);
-  if (DOM.editAlbumModal.btnClose) DOM.editAlbumModal.btnClose.addEventListener("click", closeEditAlbumModal);
-  if (DOM.editAlbumModal.btnCancel) DOM.editAlbumModal.btnCancel.addEventListener("click", closeEditAlbumModal);
-  if (DOM.editAlbumModal.btnConfirm) DOM.editAlbumModal.btnConfirm.addEventListener("click", confirmEditAlbumChanges);
+  // ============================================================
+  // EDICIÓN DE ÁLBUMES Y PLAYLISTS
+  // ============================================================
+  if (DOM.albumActions.btnEdit) {
+    DOM.albumActions.btnEdit.addEventListener("click", openEditAlbumModal);
+  }
+  if (DOM.albumActions.btnDelete) {
+    DOM.albumActions.btnDelete.addEventListener("click", deleteActiveAlbum);
+  }
+  if (DOM.editAlbumModal.btnClose) {
+    DOM.editAlbumModal.btnClose.addEventListener("click", closeEditAlbumModal);
+  }
+  if (DOM.editAlbumModal.btnCancel) {
+    DOM.editAlbumModal.btnCancel.addEventListener("click", closeEditAlbumModal);
+  }
+  if (DOM.editAlbumModal.btnConfirm) {
+    DOM.editAlbumModal.btnConfirm.addEventListener("click", confirmEditAlbumChanges);
+  }
   if (DOM.editAlbumModal.btnUploadCover && DOM.editAlbumModal.coverFileInput) {
-    DOM.editAlbumModal.btnUploadCover.addEventListener("click", () => DOM.editAlbumModal.coverFileInput.click());
+    DOM.editAlbumModal.btnUploadCover.addEventListener("click", () => {
+      DOM.editAlbumModal.coverFileInput.click();
+    });
   }
   if (DOM.editAlbumModal.btnAddSong && DOM.editAlbumModal.addSongFileInput) {
-    DOM.editAlbumModal.btnAddSong.addEventListener("click", () => DOM.editAlbumModal.addSongFileInput.click());
+    DOM.editAlbumModal.btnAddSong.addEventListener("click", () => {
+      DOM.editAlbumModal.addSongFileInput.click();
+    });
     DOM.editAlbumModal.addSongFileInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (file) handleEditAlbumAddLocalSong(file);
     });
   }
 
+  // ============================================================
+  // FUNCIONES GLOBALES (expuestas para onclicks en HTML)
+  // ============================================================
   window.openAlbumView = openAlbumView;
   window.closeAlbumView = closeAlbumView;
   window.renderPlaylistsSidebarLinks = renderPlaylistsSidebarLinks;
@@ -213,6 +323,9 @@ async function initApp() {
   window.nextRound = nextRound;
   window.openArtistProfile = openArtistProfile;
 
+  // ============================================================
+  // SISTEMA DE RESEÑAS
+  // ============================================================
   initReviewsSystem(
     () => (queue.length ? queue[queueIndex] : null),
     () => {
@@ -240,13 +353,35 @@ async function initApp() {
           });
         });
       }
+      window.openPublicProfile = openPublicProfile;
+      window.closePublicProfile = () => {
+        const container = document.getElementById("publicProfileView");
+        if (container) {
+          container.classList.add("hidden");
+          container.innerHTML = "";
+        }
+        showSection("home");
+      };
       return all;
     },
   );
+
+  // ============================================================
+  // INICIALIZAR PESTAÑAS DE COMUNIDAD (después de que el DOM esté listo)
+  // ============================================================
+  initCommunityTabs();
+
+  // ============================================================
+  // RECREAR ICONOS LUCIDE
+  // ============================================================
   if (window.lucide) window.lucide.createIcons();
+
+  console.log("✅ Audiophille inicializado correctamente");
 }
 
-// ================== FUNCIONES DE PERFIL ==================
+// ============================================================
+// FUNCIONES DE PERFIL
+// ============================================================
 window.loadProfileData = async function loadProfileData() {
   console.log("🔄 loadProfileData ejecutándose...");
 
@@ -263,7 +398,10 @@ window.loadProfileData = async function loadProfileData() {
   }
 
   try {
-    const profileRes = await fetch(`${window.baseUrl}api.php?action=get_user_profile`);
+    // Perfil
+    const profileRes = await fetch(`${window.baseUrl}api.php?action=get_user_profile`, {
+      credentials: "include",
+    });
     const profile = await profileRes.json();
     if (profile.success) {
       document.getElementById("profileName").innerText = profile.user.nombre_usuario;
@@ -279,7 +417,10 @@ window.loadProfileData = async function loadProfileData() {
       }
     }
 
-    const statsRes = await fetch(`${window.baseUrl}api.php?action=get_user_stats`);
+    // Estadísticas
+    const statsRes = await fetch(`${window.baseUrl}api.php?action=get_user_stats`, {
+      credentials: "include",
+    });
     const stats = await statsRes.json();
     console.log("📊 Estadísticas recibidas:", stats);
 
@@ -298,7 +439,9 @@ window.loadProfileData = async function loadProfileData() {
   }
 };
 
-// Configurar eventos del modal de edición de perfil
+// ============================================================
+// CONFIGURAR MODAL DE EDICIÓN DE PERFIL
+// ============================================================
 function setupProfileEvents() {
   const editBtn = document.getElementById("editProfileBtn");
   const modal = document.getElementById("editProfileModal");
@@ -312,7 +455,9 @@ function setupProfileEvents() {
   }
 
   editBtn.addEventListener("click", async () => {
-    const profileRes = await fetch(`${window.baseUrl}api.php?action=get_user_profile`);
+    const profileRes = await fetch(`${window.baseUrl}api.php?action=get_user_profile`, {
+      credentials: "include",
+    });
     const profile = await profileRes.json();
     if (profile.success) {
       document.getElementById("modalEditUsername").value = profile.user.nombre_usuario;
@@ -341,7 +486,11 @@ function setupProfileEvents() {
     if (avatarFile) formData.append("avatar", avatarFile);
 
     try {
-      const res = await fetch(`${window.baseUrl}api.php`, { method: "POST", body: formData });
+      const res = await fetch(`${window.baseUrl}api.php`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
       const data = await res.json();
       if (data.success) {
         alert("Perfil actualizado correctamente");
@@ -356,7 +505,9 @@ function setupProfileEvents() {
   });
 }
 
-// Arrancar la app
+// ============================================================
+// ARRANCAR LA APLICACIÓN
+// ============================================================
 document.addEventListener("DOMContentLoaded", () => {
   setupProfileEvents();
   initApp();

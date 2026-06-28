@@ -417,6 +417,7 @@ function renderPlaylistAddSongInline(playlistName, container) {
             // Volver a mostrar la misma playlist
             if (state.activePlaylistName === playlistName) {
               renderPlaylistDetailView(playlistName);
+              await refreshUI(); // o loadInitialData() + renderPlaylistDetailView()
             }
           } else {
             await showAlert(data.message || "Error al añadir la canción", "Error");
@@ -577,3 +578,5 @@ function escapeHtml(str) {
 }
 // Al final de ui.js, asegurar que la función esté disponible globalmente
 window.renderPlaylistDetailView = renderPlaylistDetailView;
+
+export { refreshUI };

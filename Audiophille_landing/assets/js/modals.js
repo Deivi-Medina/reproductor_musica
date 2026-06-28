@@ -53,6 +53,15 @@ function injectModalStyles() {
       margin-bottom: 24px;
       line-height: 1.5;
     }
+    .custom-modal-message strong {
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .custom-modal-message br {
+      display: block;
+      margin: 4px 0;
+      content: "";
+    }
     .custom-modal-buttons {
       display: flex;
       gap: 12px;
@@ -135,7 +144,7 @@ function closeModal() {
 }
 
 /**
- * Muestra un alert personalizado
+ * Muestra un alert personalizado (acepta HTML en el mensaje)
  */
 export function showAlert(message, title = "Aviso") {
   return new Promise((resolve) => {
@@ -148,7 +157,8 @@ export function showAlert(message, title = "Aviso") {
 
     dynamicDiv.innerHTML = "";
     titleEl.innerText = title;
-    msgEl.innerText = message;
+    // ✅ Usamos innerHTML para permitir <br> y <strong>
+    msgEl.innerHTML = message;
 
     buttonsDiv.innerHTML = `<button class="custom-modal-btn confirm" id="customAlertOk">Aceptar</button>`;
 
@@ -165,7 +175,7 @@ export function showAlert(message, title = "Aviso") {
 }
 
 /**
- * Muestra un confirm personalizado (Sí/No)
+ * Muestra un confirm personalizado (Sí/No) - acepta HTML
  * @returns Promise<boolean> true si confirma, false si cancela
  */
 export function showConfirm(message, title = "Confirmar", confirmText = "Sí", cancelText = "No", isDanger = false) {
@@ -179,7 +189,7 @@ export function showConfirm(message, title = "Confirmar", confirmText = "Sí", c
 
     dynamicDiv.innerHTML = "";
     titleEl.innerText = title;
-    msgEl.innerText = message;
+    msgEl.innerHTML = message;
 
     const confirmClass = isDanger ? "danger" : "confirm";
     buttonsDiv.innerHTML = `
@@ -227,7 +237,7 @@ export function showPrompt(message, defaultValue = "", title = "Ingrese un valor
 
     dynamicDiv.innerHTML = `<input type="text" id="customPromptInput" class="custom-modal-input" value="${defaultValue.replace(/"/g, "&quot;")}" placeholder="${message}">`;
     titleEl.innerText = title;
-    msgEl.innerText = message;
+    msgEl.innerHTML = message;
 
     buttonsDiv.innerHTML = `
       <button class="custom-modal-btn cancel" id="customPromptCancel">Cancelar</button>
@@ -261,5 +271,7 @@ export function showPrompt(message, defaultValue = "", title = "Ingrese un valor
   });
 }
 
-// Para mantener compatibilidad, podemos sobreescribir los nativos si se desea
-// pero es mejor usarlos explícitamente.
+// Para mantener compatibilidad, exponemos las funciones globalmente
+window.showAlert = showAlert;
+window.showConfirm = showConfirm;
+window.showPrompt = showPrompt;

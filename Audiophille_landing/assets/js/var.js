@@ -1,7 +1,6 @@
 // js/var.js
-import albums from "./canciones.js"; // Solo para compatibilidad, ya no se usa directamente
+import albums from "./canciones.js";
 
-// ================== REFERENCIAS AL DOM ==================
 const DOM = {
   sidebar: {
     navHome: document.getElementById("navHome"),
@@ -9,6 +8,7 @@ const DOM = {
     navDiary: document.getElementById("navDiary"),
     navGame: document.getElementById("navGame"),
     navProfile: document.getElementById("navProfile"),
+    navCommunity: document.getElementById("navCommunity"),
     btnCreatePlaylist: document.getElementById("btnCreatePlaylist"),
     playlistsContainer: document.getElementById("playlistsDynamicContainer"),
   },
@@ -18,11 +18,13 @@ const DOM = {
     diary: document.getElementById("diaryView"),
     game: document.getElementById("gameView"),
     profile: document.getElementById("profileView"),
+    community: document.getElementById("communityView"), // 👈 NUEVO
     tracksList: document.getElementById("tracksDynamicList"),
     albumGrid: document.getElementById("albumGrid"),
     header: document.getElementById("globalHeader"),
     searchBar: document.getElementById("globalSearch"),
     artistProfile: document.getElementById("artistProfileView"),
+    publicProfile: document.getElementById("publicProfileView"),
   },
   currentAlbumDetail: {
     cover: document.getElementById("detailAlbumCover"),
@@ -207,7 +209,6 @@ export async function loadInitialData() {
       })),
     }));
 
-    // ========== CORRECCIÓN: Playlists con portada real ==========
     state.playlists = {};
     data.playlists.forEach((pl) => {
       state.playlists[pl.nombre] = {
@@ -218,7 +219,6 @@ export async function loadInitialData() {
           trackTitle: c.titulo,
           file: c.archivo_url,
           artistName: c.artista_nombre || "Artista",
-          // USAR EL CAMPO CORRECTO 'album_cover' (con guion bajo) y URL por defecto real
           albumCover: c.album_cover || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400",
           originalAlbumIdx: null,
         })),

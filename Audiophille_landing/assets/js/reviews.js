@@ -118,8 +118,10 @@ function updateStateStats() {
   const avgEl = document.getElementById("statAvgRating");
   const favArtistEl = document.getElementById("statFavArtist");
 
+  // Total de reseñas
   if (totalEl) totalEl.innerText = reviews.length;
 
+  // Calificación media
   if (avgEl) {
     if (reviews.length === 0) {
       avgEl.innerText = "0.0 ★";
@@ -138,24 +140,44 @@ function updateStateStats() {
     }
   }
 
+  // Artista favorito (mejor algoritmo)
   if (favArtistEl) {
-    const artistCount = {};
+    if (reviews.length === 0) {
+      favArtistEl.innerText = "Ninguno";
+      return;
+    }
+
+    // 1. Contar reseñas por artista
+    const artistStats = {};
     reviews.forEach((r) => {
       const art = r.artistName || "Desconocido";
-      artistCount[art] = (artistCount[art] || 0) + 1;
+      if (!artistStats[art]) {
+        artistStats[art] = { count: 0, totalRating: 0, ratings: [] };
+      }
+      artistStats[art].count += 1;
+      artistStats[art].totalRating += Number(r.rating) || 0;
+      artistStats[art].ratings.push(Number(r.rating) || 0);
     });
-    let fav = "Ninguno";
-    let max = 0;
-    for (const [artist, count] of Object.entries(artistCount)) {
-      if (count > max) {
-        max = count;
-        fav = artist;
+
+    // 2. Calcular puntuación para cada artista
+    let bestArtist = "Ninguno";
+    let bestScore = -1;
+
+    for (const [artist, stats] of Object.entries(artistStats)) {
+      const avgRating = stats.totalRating / stats.count;
+      // Puntuación = (cantidad * 2) + (promedio * 3)
+      // Prioriza cantidad, pero la calidad también importa
+      const score = stats.count * 2 + avgRating * 3;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestArtist = artist;
       }
     }
-    favArtistEl.innerText = fav;
+
+    favArtistEl.innerText = bestArtist;
   }
 }
-
 // ================== FUNCIONES DE ESTRELLAS (INTERACTIVAS) ==================
 function applyStarHoverEffect(starElement) {
   if (!starElement) return;

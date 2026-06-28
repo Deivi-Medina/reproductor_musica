@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 require_once __DIR__ . '/../config/database.php';
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -19,6 +21,7 @@ $user_id = $_SESSION['user_id'];
     <title>Audiophille's Player - Bienvenido <?= htmlspecialchars($user_name) ?></title>
     <link rel="icon" href="<?= BASE_URL ?>assets/img/icon.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/main.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/social.css">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
@@ -26,7 +29,7 @@ $user_id = $_SESSION['user_id'];
     <div class="mesh-background"></div>
     <div class="app-container">
 
-        <!-- SIDEBAR -->
+        <!-- ==================== SIDEBAR ==================== -->
         <aside class="sidebar-left" id="sidebarLeft">
             <div class="sidebar-brand">
                 <i data-lucide="disc" class="brand-logo"></i>
@@ -38,6 +41,7 @@ $user_id = $_SESSION['user_id'];
                 <button class="menu-item" id="navDiary"><i data-lucide="book-open" class="diary-icon-fixed"></i> <span>Diario & Reseñas</span></button>
                 <button class="menu-item" id="navGame"><i data-lucide="gamepad-2"></i> <span>Juego</span></button>
                 <button class="menu-item" id="navProfile"><i data-lucide="user"></i> <span>Mi perfil</span></button>
+                <button class="menu-item" id="navCommunity"><i data-lucide="users"></i> <span>Comunidad</span></button>
             </nav>
             <div class="sidebar-playlists">
                 <div class="playlists-header">
@@ -51,14 +55,18 @@ $user_id = $_SESSION['user_id'];
             </div>
         </aside>
 
-        <!-- CONTENIDO PRINCIPAL -->
+        <!-- ==================== CONTENIDO PRINCIPAL ==================== -->
         <div class="main-content">
+
+            <!-- HEADER -->
             <header class="global-header" id="globalHeader">
                 <div class="search-container">
                     <i data-lucide="search" class="search-icon"></i>
                     <input type="text" id="globalSearch" placeholder="¿Qué quieres escuchar hoy?" autocomplete="off">
                 </div>
             </header>
+
+            <!-- ==================== VISTAS EXISTENTES ==================== -->
 
             <!-- Biblioteca (Inicio) -->
             <main class="content-wrapper" id="mainLibrary">
@@ -192,7 +200,7 @@ $user_id = $_SESSION['user_id'];
                 </div>
             </main>
 
-            <!-- Vista de perfil (IDs únicos) -->
+            <!-- Vista de perfil propio -->
             <main class="content-wrapper hidden" id="profileView">
                 <div class="profile-container">
                     <div class="profile-header">
@@ -228,9 +236,108 @@ $user_id = $_SESSION['user_id'];
                 </div>
             </main>
 
+            <!-- Vista de perfil de artista -->
             <div id="artistProfileView" class="hidden"></div>
-        </div>
-    </div>
+
+            <!-- ==================== NUEVA VISTA: COMUNIDAD ==================== -->
+            <main class="content-wrapper hidden" id="communityView">
+                <div class="community-container">
+                    <!-- Header de comunidad -->
+                    <div class="community-header-inline">
+                        <h2><i data-lucide="users" class="community-icon"></i> Comunidad</h2>
+                        <div class="community-tabs">
+                            <button class="community-tab active" data-tab="feed">
+                                <i data-lucide="rss"></i> Feed
+                            </button>
+                            <button class="community-tab" data-tab="explore">
+                                <i data-lucide="compass"></i> Explorar
+                            </button>
+                            <button class="community-tab" data-tab="followers">
+                                <i data-lucide="users"></i> Seguidores
+                            </button>
+                            <button class="community-tab" data-tab="following">
+                                <i data-lucide="user-check"></i> Siguiendo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contenido de las pestañas -->
+                    <div class="community-content">
+
+                        <!-- ===== FEED ===== -->
+                        <div id="tab-feed" class="community-tab-panel active">
+                            <div class="feed-header-actions">
+                                <button id="feedRefreshBtn" class="feed-refresh-btn" title="Actualizar feed">
+                                    <i data-lucide="refresh-cw"></i>
+                                </button>
+                            </div>
+                            <div class="feed-filters">
+                                <button class="feed-filter-btn active" data-filter="all">Todo</button>
+                                <button class="feed-filter-btn" data-filter="playlist">Playlists</button>
+                                <button class="feed-filter-btn" data-filter="review">Reseñas</button>
+                                <button class="feed-filter-btn" data-filter="follow">Seguidores</button>
+                            </div>
+                            <div id="feedList" class="feed-list">
+                                <!-- El feed se carga desde JS -->
+                            </div>
+                            <div id="feedLoader" class="feed-loader hidden">
+                                <i data-lucide="loader-circle" class="spin"></i> Cargando más...
+                            </div>
+                            <div id="feedEnd" class="feed-end hidden">
+                                <span>🎵 No hay más publicaciones</span>
+                            </div>
+                        </div>
+
+                        <!-- ===== EXPLORAR ===== -->
+                        <div id="tab-explore" class="community-tab-panel hidden">
+                            <div class="explore-header-actions">
+                                <span class="explore-stats" id="totalUsersCount">0 usuarios</span>
+                            </div>
+                            <div class="explore-search-box">
+                                <i data-lucide="search" class="explore-search-icon"></i>
+                                <input type="text" id="exploreSearchInput" placeholder="Buscar por nombre de usuario..." class="explore-search-input" autocomplete="off">
+                                <button id="exploreSearchClear" class="explore-search-clear hidden"><i data-lucide="x"></i></button>
+                            </div>
+                            <div class="explore-filters">
+                                <button class="explore-filter-btn active" data-filter="all">Todos</button>
+                                <button class="explore-filter-btn" data-filter="followers">Más seguidos</button>
+                                <button class="explore-filter-btn" data-filter="recent">Recientes</button>
+                            </div>
+                            <div id="exploreUsersList" class="explore-users-grid">
+                                <!-- Los usuarios se cargan desde JS -->
+                            </div>
+                            <div id="exploreLoader" class="explore-loader hidden">
+                                <i data-lucide="loader-circle" class="spin"></i> Cargando más...
+                            </div>
+                            <div id="exploreEnd" class="explore-end hidden">
+                                <span>🎵 No hay más usuarios</span>
+                            </div>
+                        </div>
+
+                        <!-- ===== SEGUIDORES ===== -->
+                        <div id="tab-followers" class="community-tab-panel hidden">
+                            <h3><i data-lucide="users"></i> Mis seguidores</h3>
+                            <div id="followersList" class="users-grid">
+                                <!-- Se carga desde JS -->
+                            </div>
+                        </div>
+
+                        <!-- ===== SIGUIENDO ===== -->
+                        <div id="tab-following" class="community-tab-panel hidden">
+                            <h3><i data-lucide="user-check"></i> A quién sigo</h3>
+                            <div id="followingList" class="users-grid">
+                                <!-- Se carga desde JS -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+            <div id="publicProfileView" class="content-wrapper hidden"></div>
+            <div id="feedView" class="content-wrapper hidden"></div>
+            <div id="exploreView" class="content-wrapper hidden"></div>
+        </div> <!-- cierre .main-content -->
+    </div> <!-- cierre .app-container -->
 
     <!-- ==================== MODALES ==================== -->
 
@@ -362,7 +469,9 @@ $user_id = $_SESSION['user_id'];
                 <h4 id="miniTitle">Canción</h4>
                 <p id="miniArtist">Artista</p>
             </div>
-            <div class="mini-controls" onclick="event.stopPropagation()"><button class="btn-mini-play" id="btnMiniPlay"><i data-lucide="play"></i></button></div>
+            <div class="mini-controls" onclick="event.stopPropagation()">
+                <button class="btn-mini-play" id="btnMiniPlay"><i data-lucide="play"></i></button>
+            </div>
         </div>
         <div class="mini-progress-bar">
             <div id="miniProgressFill" class="mini-progress-fill"></div>
@@ -418,17 +527,21 @@ $user_id = $_SESSION['user_id'];
             <aside class="queue-sidebar collapsed" id="equalizerSidebar">
                 <div class="queue-panel">
                     <div class="eq-panel-meta">
-                        <h3 class="eq-title">Ecualizador Pro</h3><button id="btnResetEqualizer" class="btn-eq-reset">Reset</button>
+                        <h3 class="eq-title">Ecualizador Pro</h3>
+                        <button id="btnResetEqualizer" class="btn-eq-reset">Reset</button>
                     </div>
                     <div class="eq-sliders-container">
                         <div class="eq-panel-row">
-                            <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="music"></i> Bajos</span><span id="lblEqBass" class="eq-value-text">0 dB</span></div><input type="range" id="eqBass" class="eq-slider-input" min="-12" max="12" value="0" step="1">
+                            <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="music"></i> Bajos</span><span id="lblEqBass" class="eq-value-text">0 dB</span></div>
+                            <input type="range" id="eqBass" class="eq-slider-input" min="-12" max="12" value="0" step="1">
                         </div>
                         <div class="eq-panel-row">
-                            <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="mic"></i> Voz / Cantante</span><span id="lblEqVocals" class="eq-value-text">0 dB</span></div><input type="range" id="eqVocals" class="eq-slider-input" min="-12" max="12" value="0" step="1">
+                            <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="mic"></i> Voz / Cantante</span><span id="lblEqVocals" class="eq-value-text">0 dB</span></div>
+                            <input type="range" id="eqVocals" class="eq-slider-input" min="-12" max="12" value="0" step="1">
                         </div>
                         <div class="eq-panel-row">
-                            <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="guitar"></i> Instrumental</span><span id="lblEqTreble" class="eq-value-text">0 dB</span></div><input type="range" id="eqTreble" class="eq-slider-input" min="-12" max="12" value="0" step="1">
+                            <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="guitar"></i> Instrumental</span><span id="lblEqTreble" class="eq-value-text">0 dB</span></div>
+                            <input type="range" id="eqTreble" class="eq-slider-input" min="-12" max="12" value="0" step="1">
                         </div>
                     </div>
                 </div>
@@ -436,16 +549,21 @@ $user_id = $_SESSION['user_id'];
         </div>
     </section>
 
-    <!-- Asistente musik -->
+    <!-- ==================== ASISTENTE MUSIK ==================== -->
     <div class="musik-container">
         <div id="musikChatWindow" class="musik-chat-window musik-hidden">
             <div class="musik-chat-header">
-                <div class="musik-avatar-info"><i data-lucide="sparkles" class="musik-icon-spark"></i>
+                <div class="musik-avatar-info">
+                    <i data-lucide="sparkles" class="musik-icon-spark"></i>
                     <div>
-                        <h4>musik</h4><span class="musik-status">En línea y listo</span>
+                        <h4>musik</h4>
+                        <span class="musik-status">En línea y listo</span>
                     </div>
                 </div>
-                <div class="chat-header-buttons"><button id="btnExpandMusik" class="chat-expand-btn"><i data-lucide="maximize-2"></i></button><button id="btnMinimizeMusik" class="chat-minimize-btn"><i data-lucide="chevron-down"></i></button></div>
+                <div class="chat-header-buttons">
+                    <button id="btnExpandMusik" class="chat-expand-btn"><i data-lucide="maximize-2"></i></button>
+                    <button id="btnMinimizeMusik" class="chat-minimize-btn"><i data-lucide="chevron-down"></i></button>
+                </div>
             </div>
             <div id="musikChatMessages" class="musik-chat-messages"></div>
             <div class="musik-chat-input-area">

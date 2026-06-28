@@ -25,15 +25,11 @@ async function refreshDataAndUI() {
   }
 }
 
-// Listener para el input de portada (se ejecuta al seleccionar un archivo)
 if (DOM.editAlbumModal?.coverFileInput) {
   DOM.editAlbumModal.coverFileInput.addEventListener("change", function (e) {
     const file = this.files[0];
     if (file) {
-      // Guardar el archivo para subirlo después
       tempCoverFile = file;
-
-      // Solo previsualización (NO se asigna a inputCover)
       const preview = document.getElementById("editCoverPreview");
       if (preview) {
         const reader = new FileReader();
@@ -77,7 +73,6 @@ export async function openEditAlbumModal() {
     return;
   }
 
-  // Resetear estado de imagen
   tempCoverFile = null;
   const preview = document.getElementById("editCoverPreview");
   if (preview) {

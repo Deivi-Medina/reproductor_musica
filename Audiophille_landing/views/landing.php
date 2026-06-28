@@ -21,6 +21,7 @@ unset($_SESSION['modal_message'], $_SESSION['modal_type']);
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Archivos externos -->
+     <link rel="icon" href="<?= BASE_URL ?>assets/img/icon.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/components.css">
     <script src="<?= BASE_URL ?>assets/js/main.js" defer></script>

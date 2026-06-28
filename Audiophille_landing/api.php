@@ -44,7 +44,9 @@ function sendJson($data)
     exit;
 }
 
+// ==================== SWITCH PRINCIPAL ====================
 switch ($action) {
+    // ----- FUNCIONES EXISTENTES -----
     case 'get_initial_data':
         getInitialData($pdo, $user_id);
         break;
@@ -117,9 +119,49 @@ switch ($action) {
     case 'get_user_stats':
         getUserStats($pdo, $user_id);
         break;
+
+    // ----- FUNCIONES SOCIALES -----
+    case 'get_public_profile':
+        getPublicProfile($pdo, $user_id, $_GET);
+        break;
+    case 'toggle_follow_user':
+        toggleFollowUser($pdo, $user_id, $_POST);
+        break;
+    case 'get_followers':
+        getFollowers($pdo, $user_id, $_GET);
+        break;
+    case 'get_following':
+        getFollowing($pdo, $user_id, $_GET);
+        break;
+    case 'get_feed':
+        getFeed($pdo, $user_id, $_GET);
+        break;
+    case 'explore_users':
+        exploreUsers($pdo, $user_id, $_GET);
+        break;
+    case 'add_playlist_to_library':
+        addPlaylistToLibrary($pdo, $user_id, $_POST);
+        break;
+    case 'merge_playlists':
+        mergePlaylists($pdo, $user_id, $_POST);
+        break;
+    case 'check_friends':
+        checkFriends($pdo, $user_id, $_GET);
+        break;
+    case 'is_following':
+        isFollowing($pdo, $user_id, $_GET);
+        break;
+    case 'check_merged_playlist':
+        checkMergedPlaylist($pdo, $user_id, $_GET);
+        break;
+
     default:
         sendJson(['success' => false, 'message' => 'Acción no soportada: ' . $action]);
 }
+
+// ============================================================
+// FUNCIONES EXISTENTES (sin cambios, pero con try-catch)
+// ============================================================
 
 function getInitialData($pdo, $user_id)
 {
@@ -678,10 +720,19 @@ function deleteAlbum($pdo, $user_id, $data)
 
 function getUserProfile($pdo, $user_id)
 {
-    $stmt = $pdo->prepare("SELECT nombre_usuario, email, avatar FROM usuarios WHERE id_usuario = ?");
-    $stmt->execute([$user_id]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    sendJson(['success' => true, 'user' => $user]);
+    try {
+        $stmt = $pdo->prepare("SELECT nombre_usuario, email, avatar FROM usuarios WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user) {
+            sendJson(['success' => true, 'user' => $user]);
+        } else {
+            sendJson(['success' => false, 'message' => 'Usuario no encontrado']);
+        }
+    } catch (Exception $e) {
+        sendJson(['success' => false, 'message' => 'Error en getUserProfile: ' . $e->getMessage()]);
+    }
 }
 
 function updateUserProfile($pdo, $user_id, $data, $files)
@@ -732,32 +783,627 @@ function updateUserProfile($pdo, $user_id, $data, $files)
 
 function getUserStats($pdo, $user_id)
 {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM resenas WHERE id_usuario = ?");
-    $stmt->execute([$user_id]);
-    $totalReviews = $stmt->fetchColumn();
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM resenas WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $totalReviews = (int)$stmt->fetchColumn();
 
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM favoritos WHERE id_usuario = ?");
-    $stmt->execute([$user_id]);
-    $totalFavorites = $stmt->fetchColumn();
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM favoritos WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $totalFavorites = (int)$stmt->fetchColumn();
 
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM playlists WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $totalPlaylists = (int)$stmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM canciones WHERE es_sistema = 0 AND id_usuario_subio = ?");
+        $stmt->execute([$user_id]);
+        $totalImported = (int)$stmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT AVG(puntuacion) FROM resenas WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $avg = $stmt->fetchColumn();
+        $avgRating = $avg !== null ? round((float)$avg, 1) : 0;
+
+        sendJson([
+            'success' => true,
+            'total_reviews' => $totalReviews,
+            'total_favorites' => $totalFavorites,
+            'total_playlists' => $totalPlaylists,
+            'total_imported' => $totalImported,
+            'avg_rating' => $avgRating
+        ]);
+    } catch (Exception $e) {
+        sendJson(['success' => false, 'message' => 'Error en getUserStats: ' . $e->getMessage()]);
+    }
+}
+
+// ============================================================
+// FUNCIONES SOCIALES
+// ============================================================
+function getPublicProfile($pdo, $current_user_id, $data)
+{
+    $target_user_id = $data['user_id'] ?? 0;
+    if (!$target_user_id) {
+        sendJson(['success' => false, 'message' => 'ID de usuario requerido']);
+    }
+
+    // Datos del usuario (sin email)
+    $stmt = $pdo->prepare("SELECT id_usuario, nombre_usuario, avatar, fecha_registro FROM usuarios WHERE id_usuario = ?");
+    $stmt->execute([$target_user_id]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$user) {
+        sendJson(['success' => false, 'message' => 'Usuario no encontrado']);
+    }
+
+    // Estadísticas
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM playlists WHERE id_usuario = ?");
-    $stmt->execute([$user_id]);
-    $totalPlaylists = $stmt->fetchColumn();
+    $stmt->execute([$target_user_id]);
+    $total_playlists = (int)$stmt->fetchColumn();
 
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM canciones WHERE es_sistema = 0 AND id_usuario_subio = ?");
-    $stmt->execute([$user_id]);
-    $totalImported = $stmt->fetchColumn();
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM resenas WHERE id_usuario = ?");
+    $stmt->execute([$target_user_id]);
+    $total_reviews = (int)$stmt->fetchColumn();
 
-    $stmt = $pdo->prepare("SELECT AVG(puntuacion) FROM resenas WHERE id_usuario = ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM seguidores WHERE id_seguido = ?");
+    $stmt->execute([$target_user_id]);
+    $followers = (int)$stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM seguidores WHERE id_usuario = ?");
+    $stmt->execute([$target_user_id]);
+    $following = (int)$stmt->fetchColumn();
+
+    // Playlists públicas del usuario
+    $stmt = $pdo->prepare("SELECT id_playlist, nombre, portada_url FROM playlists WHERE id_usuario = ?");
+    $stmt->execute([$target_user_id]);
+    $playlists = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Reseñas recientes
+    $stmt = $pdo->prepare("
+        SELECT r.puntuacion, r.comentario, r.fecha, 
+               r.titulo_cancion_texto, r.artista_texto,
+               COALESCE(a.caratula_url, '') as albumCover
+        FROM resenas r
+        LEFT JOIN canciones c ON r.id_cancion = c.id_cancion
+        LEFT JOIN albumes a ON c.id_album = a.id_album
+        WHERE r.id_usuario = ?
+        ORDER BY r.fecha DESC
+        LIMIT 5
+    ");
+    $stmt->execute([$target_user_id]);
+    $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Verificar si el usuario actual sigue a este usuario
+    $stmt = $pdo->prepare("SELECT 1 FROM seguidores WHERE id_usuario = ? AND id_seguido = ?");
+    $stmt->execute([$current_user_id, $target_user_id]);
+    $is_following = $stmt->fetchColumn() ? true : false;
+
+    // Verificar si son amigos mutuos (ambos se siguen)
+    $stmt = $pdo->prepare("
+    SELECT 1 FROM seguidores s1
+    JOIN seguidores s2 ON s1.id_usuario = s2.id_seguido AND s1.id_seguido = s2.id_usuario
+    WHERE s1.id_usuario = ? AND s1.id_seguido = ?
+");
+    $stmt->execute([$current_user_id, $target_user_id]);
+    $are_friends = $stmt->fetchColumn() ? true : false;
+    sendJson([
+        'success' => true,
+        'user' => $user,
+        'stats' => [
+            'playlists' => $total_playlists,
+            'reviews' => $total_reviews,
+            'followers' => $followers,
+            'following' => $following
+        ],
+        'playlists' => $playlists,
+        'reviews' => $reviews,
+        'is_following' => $is_following,
+        'are_friends' => $are_friends
+    ]);
+}
+
+function toggleFollowUser($pdo, $current_user_id, $data)
+{
+    $target_user_id = $data['user_id'] ?? 0;
+    if (!$target_user_id) {
+        sendJson(['success' => false, 'message' => 'ID de usuario requerido']);
+    }
+    if ($target_user_id == $current_user_id) {
+        sendJson(['success' => false, 'message' => 'No puedes seguirte a ti mismo']);
+    }
+
+    $stmt = $pdo->prepare("SELECT 1 FROM seguidores WHERE id_usuario = ? AND id_seguido = ?");
+    $stmt->execute([$current_user_id, $target_user_id]);
+    $exists = $stmt->fetchColumn();
+
+    if ($exists) {
+        $stmt = $pdo->prepare("DELETE FROM seguidores WHERE id_usuario = ? AND id_seguido = ?");
+        $stmt->execute([$current_user_id, $target_user_id]);
+        $following = false;
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO seguidores (id_usuario, id_seguido) VALUES (?, ?)");
+        $stmt->execute([$current_user_id, $target_user_id]);
+        $following = true;
+        $nombre = obtenerNombreUsuario($pdo, $target_user_id);
+        registrarActividad($pdo, $current_user_id, 'seguimiento', $target_user_id, "comenzó a seguir a $nombre");
+    }
+
+    sendJson(['success' => true, 'following' => $following]);
+}
+
+function getFollowers($pdo, $user_id, $data)
+{
+    $target_user_id = $data['user_id'] ?? $user_id;
+
+    $stmt = $pdo->prepare("
+        SELECT u.id_usuario, u.nombre_usuario, u.avatar, s.fecha_seguimiento
+        FROM seguidores s
+        JOIN usuarios u ON s.id_usuario = u.id_usuario
+        WHERE s.id_seguido = ?
+        ORDER BY s.fecha_seguimiento DESC
+    ");
+    $stmt->execute([$target_user_id]);
+    $followers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    sendJson(['success' => true, 'followers' => $followers]);
+}
+
+function getFollowing($pdo, $user_id, $data)
+{
+    $target_user_id = $data['user_id'] ?? $user_id;
+
+    $stmt = $pdo->prepare("
+        SELECT u.id_usuario, u.nombre_usuario, u.avatar, s.fecha_seguimiento
+        FROM seguidores s
+        JOIN usuarios u ON s.id_seguido = u.id_usuario
+        WHERE s.id_usuario = ?
+        ORDER BY s.fecha_seguimiento DESC
+    ");
+    $stmt->execute([$target_user_id]);
+    $following = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    sendJson(['success' => true, 'following' => $following]);
+}
+
+function getFeed($pdo, $user_id, $data)
+{
+    try {
+        $limit = isset($data['limit']) ? (int)$data['limit'] : 20;
+        $offset = isset($data['offset']) ? (int)$data['offset'] : 0;
+        $filter = isset($data['filter']) ? $data['filter'] : 'all';
+
+        $stmt = $pdo->prepare("SELECT id_seguido FROM seguidores WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $following_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $following_ids[] = $user_id;
+
+        if (empty($following_ids)) {
+            sendJson(['success' => true, 'feed' => [], 'total' => 0]);
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($following_ids), '?'));
+
+        $sql = "
+            SELECT a.*, u.nombre_usuario, u.avatar
+            FROM actividad_social a
+            JOIN usuarios u ON a.id_usuario = u.id_usuario
+            WHERE a.id_usuario IN ($placeholders)
+        ";
+
+        if ($filter !== 'all') {
+            $sql .= " AND a.tipo_actividad = ?";
+        }
+
+        $sql .= " ORDER BY a.fecha DESC LIMIT ? OFFSET ?";
+
+        $stmt = $pdo->prepare($sql);
+        $idx = 1;
+        foreach ($following_ids as $id) {
+            $stmt->bindValue($idx++, $id, PDO::PARAM_INT);
+        }
+        if ($filter !== 'all') {
+            $stmt->bindValue($idx++, $filter, PDO::PARAM_STR);
+        }
+        $stmt->bindValue($idx++, $limit, PDO::PARAM_INT);
+        $stmt->bindValue($idx++, $offset, PDO::PARAM_INT);
+
+        $stmt->execute();
+        $feed = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Total
+        $sqlTotal = "SELECT COUNT(*) FROM actividad_social WHERE id_usuario IN ($placeholders)";
+        if ($filter !== 'all') {
+            $sqlTotal .= " AND tipo_actividad = ?";
+        }
+        $stmtTotal = $pdo->prepare($sqlTotal);
+        $paramsTotal = $following_ids;
+        if ($filter !== 'all') {
+            $paramsTotal[] = $filter;
+        }
+        $stmtTotal->execute($paramsTotal);
+        $total = $stmtTotal->fetchColumn();
+
+        sendJson(['success' => true, 'feed' => $feed, 'total' => (int)$total]);
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), 'Base table or view not found') !== false) {
+            sendJson(['success' => true, 'feed' => [], 'total' => 0]);
+        } else {
+            sendJson(['success' => false, 'message' => 'Error al cargar el feed: ' . $e->getMessage()]);
+        }
+    }
+}
+
+function exploreUsers($pdo, $user_id, $data)
+{
+    try {
+        $search = isset($data['search']) ? '%' . $data['search'] . '%' : '%';
+        $limit = isset($data['limit']) ? (int)$data['limit'] : 20;
+        $offset = isset($data['offset']) ? (int)$data['offset'] : 0;
+        $filter = isset($data['filter']) ? $data['filter'] : 'all';
+
+        $orderBy = "followers_count DESC, nombre_usuario";
+        if ($filter === 'recent') {
+            $orderBy = "fecha_registro DESC";
+        }
+
+        $sql = "
+            SELECT u.id_usuario, u.nombre_usuario, u.avatar, u.fecha_registro,
+                (SELECT COUNT(*) FROM seguidores WHERE id_seguido = u.id_usuario) as followers_count,
+                (SELECT COUNT(*) FROM seguidores WHERE id_usuario = u.id_usuario) as following_count
+            FROM usuarios u
+            WHERE u.id_usuario != ? AND u.nombre_usuario LIKE ?
+            ORDER BY $orderBy
+            LIMIT ? OFFSET ?
+        ";
+
+        $stmt = $pdo->prepare($sql);
+
+        // ✅ Enlazar parámetros con tipos explícitos
+        $stmt->bindValue(1, $user_id, PDO::PARAM_INT);
+        $stmt->bindValue(2, $search, PDO::PARAM_STR);
+        $stmt->bindValue(3, $limit, PDO::PARAM_INT);
+        $stmt->bindValue(4, $offset, PDO::PARAM_INT);
+
+        $stmt->execute();
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($users as &$user) {
+            $stmt = $pdo->prepare("SELECT 1 FROM seguidores WHERE id_usuario = ? AND id_seguido = ?");
+            $stmt->execute([$user_id, $user['id_usuario']]);
+            $user['is_following'] = $stmt->fetchColumn() ? true : false;
+        }
+
+        $sqlTotal = "SELECT COUNT(*) FROM usuarios WHERE id_usuario != ? AND nombre_usuario LIKE ?";
+        $stmtTotal = $pdo->prepare($sqlTotal);
+        $stmtTotal->execute([$user_id, $search]);
+        $total = $stmtTotal->fetchColumn();
+
+        sendJson(['success' => true, 'users' => $users, 'total' => (int)$total]);
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), 'Base table or view not found') !== false) {
+            sendJson(['success' => true, 'users' => [], 'total' => 0]);
+        } else {
+            sendJson(['success' => false, 'message' => 'Error en exploreUsers: ' . $e->getMessage()]);
+        }
+    }
+}
+
+function addPlaylistToLibrary($pdo, $user_id, $data)
+{
+    $playlist_id = $data['playlist_id'] ?? 0;
+    if (!$playlist_id) {
+        sendJson(['success' => false, 'message' => 'ID de playlist requerido']);
+    }
+
+    $stmt = $pdo->prepare("SELECT nombre, portada_url, id_usuario FROM playlists WHERE id_playlist = ?");
+    $stmt->execute([$playlist_id]);
+    $playlist = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$playlist) {
+        sendJson(['success' => false, 'message' => 'Playlist no encontrada']);
+    }
+    if ($playlist['id_usuario'] == $user_id) {
+        sendJson(['success' => false, 'message' => 'Esta playlist es tuya, no puedes copiarla a ti mismo']);
+    }
+
+    // Verificar si ya existe una copia en la biblioteca del usuario
+    $stmt = $pdo->prepare("SELECT id_playlist FROM playlists WHERE id_usuario = ? AND nombre = ?");
+    $stmt->execute([$user_id, $playlist['nombre'] . ' (copia)']);
+    if ($stmt->fetchColumn()) {
+        sendJson(['success' => false, 'message' => 'Ya tienes una copia de esta playlist en tu biblioteca']);
+    }
+
+    $nuevo_nombre = $playlist['nombre'] . ' (copia)';
+    $stmt = $pdo->prepare("INSERT INTO playlists (nombre, id_usuario, portada_url) VALUES (?, ?, ?)");
+    $stmt->execute([$nuevo_nombre, $user_id, $playlist['portada_url']]);
+    $nuevo_id = $pdo->lastInsertId();
+
+    $stmt = $pdo->prepare("SELECT id_cancion FROM playlist_canciones WHERE id_playlist = ? ORDER BY orden");
+    $stmt->execute([$playlist_id]);
+    $canciones = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    foreach ($canciones as $idx => $id_cancion) {
+        $stmt = $pdo->prepare("INSERT INTO playlist_canciones (id_playlist, id_cancion, orden) VALUES (?, ?, ?)");
+        $stmt->execute([$nuevo_id, $id_cancion, $idx]);
+    }
+
+    registrarActividad($pdo, $user_id, 'playlist_creada', $nuevo_id, "añadió la playlist '{$playlist['nombre']}' a su biblioteca");
+
+    sendJson(['success' => true, 'id_playlist' => $nuevo_id, 'nombre' => $nuevo_nombre]);
+}
+
+function mergePlaylists($pdo, $user_id, $data)
+{
+    $friend_id = $data['friend_id'] ?? 0;
+    if (!$friend_id) {
+        sendJson(['success' => false, 'message' => 'ID de amigo requerido']);
+    }
+
+    // Verificar que son amigos mutuos
+    $stmt = $pdo->prepare("
+        SELECT 1 FROM seguidores s1
+        JOIN seguidores s2 ON s1.id_usuario = s2.id_seguido AND s1.id_seguido = s2.id_usuario
+        WHERE s1.id_usuario = ? AND s1.id_seguido = ?
+    ");
+    $stmt->execute([$user_id, $friend_id]);
+    if (!$stmt->fetchColumn()) {
+        sendJson(['success' => false, 'message' => 'Debes ser amigo de este usuario para fusionar playlists']);
+    }
+
+    // Obtener nombres
+    $stmt = $pdo->prepare("SELECT nombre_usuario FROM usuarios WHERE id_usuario = ?");
     $stmt->execute([$user_id]);
-    $avgRating = round($stmt->fetchColumn(), 1);
+    $mi_nombre = $stmt->fetchColumn();
+    $stmt->execute([$friend_id]);
+    $friend_name = $stmt->fetchColumn();
+
+    $nombre_playlist = "Fusión: " . $mi_nombre . " + " . $friend_name;
+
+    // Verificar si el usuario actual YA TIENE la playlist fusionada
+    $stmt = $pdo->prepare("SELECT id_playlist FROM playlists WHERE id_usuario = ? AND nombre = ?");
+    $stmt->execute([$user_id, $nombre_playlist]);
+    if ($stmt->fetchColumn()) {
+        sendJson(['success' => false, 'message' => 'Ya tienes esta playlist fusionada en tu biblioteca.']);
+    }
+
+    // Verificar si el AMIGO ya tiene la playlist fusionada
+    $stmt = $pdo->prepare("SELECT id_playlist, portada_url FROM playlists WHERE id_usuario = ? AND nombre = ?");
+    $stmt->execute([$friend_id, $nombre_playlist]);
+    $friend_playlist = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Si el amigo ya la tiene, copiamos su playlist al usuario actual
+    if ($friend_playlist) {
+        // Copiar la playlist del amigo
+        $stmt = $pdo->prepare("INSERT INTO playlists (nombre, id_usuario, portada_url) VALUES (?, ?, ?)");
+        $stmt->execute([$nombre_playlist, $user_id, $friend_playlist['portada_url']]);
+        $nuevo_id_user = $pdo->lastInsertId();
+
+        // Copiar canciones de la playlist del amigo
+        $stmt = $pdo->prepare("SELECT id_cancion, orden FROM playlist_canciones WHERE id_playlist = ? ORDER BY orden");
+        $stmt->execute([$friend_playlist['id_playlist']]);
+        $canciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($canciones as $c) {
+            $stmt = $pdo->prepare("INSERT INTO playlist_canciones (id_playlist, id_cancion, orden) VALUES (?, ?, ?)");
+            $stmt->execute([$nuevo_id_user, $c['id_cancion'], $c['orden']]);
+        }
+
+        registrarActividad($pdo, $user_id, 'playlist_creada', $nuevo_id_user, "obtuvo una copia de la playlist fusionada '$nombre_playlist' con $friend_name");
+
+        sendJson([
+            'success' => true,
+            'id_playlist' => $nuevo_id_user,
+            'nombre' => $nombre_playlist,
+            'total_canciones' => count($canciones),
+            'copied_from_friend' => true // Indicador para el frontend
+        ]);
+        return;
+    }
+
+    // ============================================================
+    // NINGUNO TIENE LA PLAYLIST → CREAR NUEVA PARA AMBOS
+    // ============================================================
+
+    // Obtener canciones del usuario
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT c.id_cancion, c.titulo, c.genero, COALESCE(ar.nombre_artista, '') as artista
+        FROM canciones c
+        LEFT JOIN albumes a ON c.id_album = a.id_album
+        LEFT JOIN artistas ar ON a.id_artista = ar.id_artista
+        WHERE c.es_sistema = 1 OR c.id_usuario_subio = ? OR a.id_usuario = ?
+    ");
+    $stmt->execute([$user_id, $user_id]);
+    $mis_canciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Obtener canciones del amigo
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT c.id_cancion, c.titulo, c.genero, COALESCE(ar.nombre_artista, '') as artista
+        FROM canciones c
+        LEFT JOIN albumes a ON c.id_album = a.id_album
+        LEFT JOIN artistas ar ON a.id_artista = ar.id_artista
+        WHERE c.es_sistema = 1 OR c.id_usuario_subio = ? OR a.id_usuario = ?
+    ");
+    $stmt->execute([$friend_id, $friend_id]);
+    $amigo_canciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $mis_ids = array_column($mis_canciones, 'id_cancion');
+    $amigo_ids = array_column($amigo_canciones, 'id_cancion');
+    $comunes = array_intersect($mis_ids, $amigo_ids);
+
+    // Crear playlist fusionada para ambos usuarios
+    $portada = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400';
+
+    // Insertar en el usuario actual
+    $stmt = $pdo->prepare("INSERT INTO playlists (nombre, id_usuario, portada_url) VALUES (?, ?, ?)");
+    $stmt->execute([$nombre_playlist, $user_id, $portada]);
+    $nuevo_id_user = $pdo->lastInsertId();
+
+    // Insertar en el amigo
+    $stmt = $pdo->prepare("INSERT INTO playlists (nombre, id_usuario, portada_url) VALUES (?, ?, ?)");
+    $stmt->execute([$nombre_playlist, $friend_id, $portada]);
+    $nuevo_id_friend = $pdo->lastInsertId();
+
+    // Seleccionar canciones según algoritmo
+    $total_canciones_seleccionadas = [];
+    $idx = 0;
+
+    // 1. 40% canciones en común
+    $comunes_list = array_values($comunes);
+    shuffle($comunes_list);
+    $limite_comunes = min(count($comunes_list), ceil(30 * 0.4));
+    for ($i = 0; $i < $limite_comunes; $i++) {
+        $total_canciones_seleccionadas[] = $comunes_list[$i];
+    }
+
+    // 2. 30% del género más escuchado
+    $generos = array_merge(
+        array_column($mis_canciones, 'genero'),
+        array_column($amigo_canciones, 'genero')
+    );
+    $generos = array_filter($generos);
+    $genero_top = '';
+    if (!empty($generos)) {
+        $genero_count = array_count_values($generos);
+        arsort($genero_count);
+        $genero_top = key($genero_count);
+        $candidatas = [];
+        foreach ($mis_canciones as $c) {
+            if ($c['genero'] === $genero_top && !in_array($c['id_cancion'], $total_canciones_seleccionadas)) {
+                $candidatas[] = $c['id_cancion'];
+            }
+        }
+        shuffle($candidatas);
+        $limite_genero = min(count($candidatas), ceil(30 * 0.3));
+        for ($i = 0; $i < $limite_genero; $i++) {
+            $total_canciones_seleccionadas[] = $candidatas[$i];
+        }
+    }
+
+    // 3. 20% mejor calificadas
+    $canciones_candidatas = array_merge($mis_ids, $amigo_ids);
+    $canciones_candidatas = array_unique($canciones_candidatas);
+    $canciones_candidatas = array_diff($canciones_candidatas, $total_canciones_seleccionadas);
+    $canciones_con_rating = [];
+    foreach ($canciones_candidatas as $id) {
+        $stmt = $pdo->prepare("SELECT AVG(puntuacion) as rating FROM resenas WHERE id_cancion = ?");
+        $stmt->execute([$id]);
+        $rating = $stmt->fetchColumn();
+        if ($rating && $rating >= 4) {
+            $canciones_con_rating[] = ['id' => $id, 'rating' => $rating];
+        }
+    }
+    usort($canciones_con_rating, function ($a, $b) {
+        return $b['rating'] <=> $a['rating'];
+    });
+    $limite_rating = min(count($canciones_con_rating), ceil(30 * 0.2));
+    for ($i = 0; $i < $limite_rating; $i++) {
+        $total_canciones_seleccionadas[] = $canciones_con_rating[$i]['id'];
+    }
+
+    // 4. 10% aleatorias
+    $restantes = array_diff($canciones_candidatas, $total_canciones_seleccionadas);
+    shuffle($restantes);
+    $limite_aleatorio = min(count($restantes), ceil(30 * 0.1));
+    for ($i = 0; $i < $limite_aleatorio; $i++) {
+        $total_canciones_seleccionadas[] = $restantes[$i];
+    }
+
+    // Si no hay suficientes canciones, rellenar
+    if (count($total_canciones_seleccionadas) < 5) {
+        $faltantes = array_diff($canciones_candidatas, $total_canciones_seleccionadas);
+        shuffle($faltantes);
+        $total_canciones_seleccionadas = array_merge($total_canciones_seleccionadas, array_slice($faltantes, 0, 5 - count($total_canciones_seleccionadas)));
+    }
+
+    // Insertar canciones en ambas playlists
+    foreach ($total_canciones_seleccionadas as $idx => $id_cancion) {
+        $stmt = $pdo->prepare("INSERT INTO playlist_canciones (id_playlist, id_cancion, orden) VALUES (?, ?, ?)");
+        $stmt->execute([$nuevo_id_user, $id_cancion, $idx]);
+        $stmt->execute([$nuevo_id_friend, $id_cancion, $idx]);
+    }
+
+    // Registrar actividad
+    registrarActividad($pdo, $user_id, 'playlist_creada', $nuevo_id_user, "creó la playlist fusionada '$nombre_playlist' con $friend_name");
+    registrarActividad($pdo, $friend_id, 'playlist_creada', $nuevo_id_friend, "creó la playlist fusionada '$nombre_playlist' con $mi_nombre");
 
     sendJson([
         'success' => true,
-        'total_reviews' => (int)$totalReviews,
-        'total_favorites' => (int)$totalFavorites,
-        'total_playlists' => (int)$totalPlaylists,
-        'total_imported' => (int)$totalImported,
-        'avg_rating' => $avgRating ?: 0
+        'id_playlist' => $nuevo_id_user,
+        'nombre' => $nombre_playlist,
+        'total_canciones' => count($total_canciones_seleccionadas),
+        'copied_from_friend' => false
     ]);
+}
+
+function checkFriends($pdo, $user_id, $data)
+{
+    $target_user_id = $data['user_id'] ?? 0;
+    if (!$target_user_id) {
+        sendJson(['success' => false, 'message' => 'ID de usuario requerido']);
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT 1 FROM seguidores s1
+        JOIN seguidores s2 ON s1.id_usuario = s2.id_seguido AND s1.id_seguido = s2.id_usuario
+        WHERE s1.id_usuario = ? AND s1.id_seguido = ?
+    ");
+    $stmt->execute([$user_id, $target_user_id]);
+    $are_friends = $stmt->fetchColumn() ? true : false;
+
+    sendJson(['success' => true, 'are_friends' => $are_friends]);
+}
+
+function isFollowing($pdo, $user_id, $data)
+{
+    $target_user_id = $data['user_id'] ?? 0;
+    if (!$target_user_id) {
+        sendJson(['success' => false, 'message' => 'ID de usuario requerido']);
+    }
+
+    $stmt = $pdo->prepare("SELECT 1 FROM seguidores WHERE id_usuario = ? AND id_seguido = ?");
+    $stmt->execute([$user_id, $target_user_id]);
+    $is_following = $stmt->fetchColumn() ? true : false;
+
+    sendJson(['success' => true, 'is_following' => $is_following]);
+}
+
+// ============================================================
+// FUNCIONES AUXILIARES SOCIALES
+// ============================================================
+
+function obtenerNombreUsuario($pdo, $user_id)
+{
+    $stmt = $pdo->prepare("SELECT nombre_usuario FROM usuarios WHERE id_usuario = ?");
+    $stmt->execute([$user_id]);
+    return $stmt->fetchColumn() ?: 'Usuario';
+}
+
+function registrarActividad($pdo, $user_id, $tipo, $id_referencia, $descripcion)
+{
+    $stmt = $pdo->prepare("INSERT INTO actividad_social (id_usuario, tipo_actividad, id_referencia, descripcion) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$user_id, $tipo, $id_referencia, $descripcion]);
+}
+
+function checkMergedPlaylist($pdo, $user_id, $data)
+{
+    $friend_id = $data['friend_id'] ?? 0;
+    if (!$friend_id) {
+        sendJson(['success' => false, 'message' => 'ID de amigo requerido']);
+    }
+
+    // Obtener nombres
+    $stmt = $pdo->prepare("SELECT nombre_usuario FROM usuarios WHERE id_usuario = ?");
+    $stmt->execute([$user_id]);
+    $mi_nombre = $stmt->fetchColumn();
+    $stmt->execute([$friend_id]);
+    $friend_name = $stmt->fetchColumn();
+
+    $nombre_playlist = "Fusión: " . $mi_nombre . " + " . $friend_name;
+
+    $stmt = $pdo->prepare("SELECT id_playlist FROM playlists WHERE id_usuario = ? AND nombre = ?");
+    $stmt->execute([$user_id, $nombre_playlist]);
+    $exists = $stmt->fetchColumn() ? true : false;
+
+    sendJson(['success' => true, 'exists' => $exists]);
 }
