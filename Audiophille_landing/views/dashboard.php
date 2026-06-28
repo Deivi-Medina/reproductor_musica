@@ -32,7 +32,7 @@ $user_id = $_SESSION['user_id'];
         <!-- ==================== SIDEBAR ==================== -->
         <aside class="sidebar-left" id="sidebarLeft">
             <div class="sidebar-brand">
-                <i data-lucide="disc" class="brand-logo"></i>
+                <img src="assets\img\audiphille.png" alt="Logo" class="brand-logo">
                 <span class="brand-name">Audiophille's</span>
             </div>
             <nav class="sidebar-menu">

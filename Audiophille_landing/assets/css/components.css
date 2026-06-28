@@ -11,16 +11,21 @@
     width: 100%;
     padding: 12px 16px;
     background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--glass-border, rgba(255,255,255,0.1));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
     border-radius: 40px;
-    color: white;
+    color: var(--text-primary, #f0edf5);
     font-size: 1rem;
     outline: none;
     transition: all 0.2s;
 }
 
+.auth-input-group input::placeholder {
+    color: var(--text-muted, #6a5a78);
+}
+
 .auth-input-group input:focus {
-    border-color: var(--blue-accent, #3b82f6);
+    border-color: var(--purple-primary, #9d4edd);
+    box-shadow: 0 0 0 3px var(--purple-dim, rgba(157, 78, 221, 0.08));
 }
 
 /* Password wrapper with toggle */
@@ -39,7 +44,7 @@
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: var(--text-secondary, rgba(255,255,255,0.6));
+    color: var(--text-muted, #6a5a78);
     cursor: pointer;
     padding: 4px;
     display: flex;
@@ -49,13 +54,18 @@
 }
 
 .auth-input-group .toggle-password:hover {
-    color: white;
+    color: var(--text-primary, #f0edf5);
+}
+
+.auth-input-group .toggle-password i {
+    width: 20px;
+    height: 20px;
 }
 
 /* Password requirements */
 .password-requirements {
     font-size: 0.75rem;
-    color: var(--text-secondary, rgba(255,255,255,0.6));
+    color: var(--text-muted, #6a5a78);
     margin-top: 6px;
     padding-left: 12px;
     display: flex;
@@ -82,7 +92,7 @@
 .auth-btn-primary {
     width: 100%;
     padding: 12px;
-    background: var(--blue-accent, #3b82f6);
+    background: var(--purple-primary, #9d4edd);
     border: none;
     border-radius: 40px;
     font-weight: 600;
@@ -90,23 +100,31 @@
     cursor: pointer;
     transition: all 0.2s;
     color: white;
+    box-shadow: 0 4px 20px var(--purple-glow, rgba(157, 78, 221, 0.25));
 }
 
 .auth-btn-primary:hover {
-    background: var(--blue-hover, #2563eb);
+    background: var(--purple-hover, #b5179e);
     transform: translateY(-2px);
+    box-shadow: 0 8px 30px var(--purple-glow, rgba(157, 78, 221, 0.35));
 }
 
 /* Auth links */
 .auth-link {
     text-align: center;
     margin-top: 1.5rem;
-    color: var(--text-secondary, rgba(255,255,255,0.6));
+    color: var(--text-muted, #6a5a78);
 }
 
 .auth-link a {
-    color: var(--blue-accent, #3b82f6);
+    color: var(--purple-primary, #9d4edd);
     text-decoration: none;
     font-weight: 600;
     cursor: pointer;
+    transition: color 0.2s;
+}
+
+.auth-link a:hover {
+    color: var(--purple-hover, #b5179e);
+    text-decoration: underline;
 }

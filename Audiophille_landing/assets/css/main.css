@@ -1,20 +1,49 @@
+/* ============================================================
+   AUDIOPHILLE'S - SISTEMA PRINCIPAL (CON PALETA LANDING)
+   ============================================================ */
+
 /* --- VARIABLES Y RESET PREMIUM --- */
 :root {
+    /* ===== PALETA LANDING ===== */
     --bg-dark: #020204;
-    --indigo-deep: #0a0a16;
+    --bg-panel: #0a0a12;
+    --bg-card: #11111d;
+    --bg-input: #18182a;
+    
+    /* Morado eléctrico del logo */
+    --purple-primary: #9d4edd;
+    --purple-hover: #b5179e;
+    --purple-glow: rgba(157, 78, 221, 0.25);
     --purple-soft: #2e0854;
-    --blue-accent: #007aff;
-    --blue-hover: #3595ff;
-    --glass-bg: rgba(255, 255, 255, 0.04);
-    --glass-bg-hover: rgba(255, 255, 255, 0.09);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-panel: rgba(10, 10, 15, 0.7);
-    --text-primary: #f5f7fa;
-    --text-secondary: #8e9cae;
-    --transition-premium: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    --transition-fast: all 0.2s ease;
+    --purple-dim: rgba(157, 78, 221, 0.08);
+    
+    /* Acentos */
+    --blue-accent: #9d4edd;      /* Ahora es morado */
+    --blue-hover: #b5179e;
+    
+    /* Grises y textos */
+    --text-primary: #f0edf5;
+    --text-secondary: #9a8aa8;
+    --text-muted: #6a5a78;
+    --text-inverse: #1a1a2e;
+    
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-bg-hover: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-border-strong: rgba(157, 78, 221, 0.15);
+    --glass-panel: rgba(10, 10, 16, 0.75);
+    
+    /* Transiciones */
+    --transition-premium: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-smooth: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition-fast: all 0.25s ease;
+    
+    /* Tipografía */
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    
+    /* Layout */
     --sidebar-width: 260px;
-    /* MEJORA: escalado tipográfico base */
     font-size: 16px;
 }
 
@@ -39,7 +68,7 @@
 
 body {
     background-color: var(--bg-dark);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-primary);
     color: var(--text-primary);
     overflow: hidden;
     min-height: 100vh;
@@ -58,10 +87,10 @@ body {
     width: 100vw;
     height: 100vh;
     z-index: -2;
-    background: 
-        radial-gradient(circle at 15% 15%, rgba(26, 26, 46, 0.9) 0%, transparent 45%),
+    background:
+        radial-gradient(circle at 15% 15%, rgba(26, 10, 46, 0.9) 0%, transparent 45%),
         radial-gradient(circle at 85% 85%, rgba(46, 8, 84, 0.5) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(0, 122, 255, 0.08) 0%, transparent 55%);
+        radial-gradient(circle at 50% 50%, rgba(157, 78, 221, 0.08) 0%, transparent 55%);
     filter: blur(100px);
     animation: backgroundPulse 20s ease-in-out infinite alternate;
 }
@@ -84,7 +113,7 @@ body {
 .sidebar-left {
     width: var(--sidebar-width);
     height: 100%;
-    background: rgba(4, 4, 8, 0.4);
+    background: rgba(2, 2, 4, 0.6);
     border-right: 1px solid var(--glass-border);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
@@ -103,7 +132,7 @@ body {
 }
 
 .brand-logo {
-    color: var(--blue-accent);
+    color: var(--purple-primary);
     width: 28px;
     height: 28px;
     animation: spinSlow 12s linear infinite;
@@ -115,7 +144,7 @@ body {
 }
 
 .brand-name {
-    font-size: 1.25rem; /* 20px */
+    font-size: 1.25rem;
     font-weight: 700;
     letter-spacing: -0.5px;
     background: linear-gradient(135deg, #fff, var(--text-secondary));
@@ -138,7 +167,7 @@ body {
     gap: 16px;
     padding: 12px 16px;
     border-radius: 12px;
-    font-size: 0.9375rem; /* 15px */
+    font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
     text-align: left;
@@ -152,16 +181,15 @@ body {
 }
 
 .menu-item.active {
-    color: var(--blue-accent);
-    background: rgba(0, 122, 255, 0.1);
+    color: var(--purple-primary);
+    background: var(--purple-dim);
 }
 
-/* MEJORA: estado focus-visible para teclado */
 .menu-item:focus-visible,
 .playlist-link:focus-visible,
 .btn-icon:focus-visible,
 button:focus-visible {
-    outline: 2px solid var(--blue-accent);
+    outline: 2px solid var(--purple-primary);
     outline-offset: 2px;
     border-radius: 12px;
 }
@@ -257,6 +285,11 @@ button:focus-visible {
     background: rgba(255, 255, 255, 0.03);
 }
 
+.playlist-link.active {
+    color: var(--purple-primary);
+    background: var(--purple-dim);
+}
+
 /* --- ÁREA PRINCIPAL --- */
 .main-content {
     flex: 1;
@@ -299,9 +332,9 @@ button:focus-visible {
 }
 
 .search-container:focus-within {
-    border-color: var(--blue-accent);
+    border-color: var(--purple-primary);
     background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 0 20px rgba(0, 122, 255, 0.15);
+    box-shadow: 0 0 20px var(--purple-glow);
 }
 
 .search-icon {
@@ -333,10 +366,13 @@ button:focus-visible {
 }
 
 .section-title {
-    font-size: 1.625rem; /* 26px */
+    font-size: 1.625rem;
     margin-bottom: 24px;
     font-weight: 800;
     letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #ffffff, var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 /* --- GRID TARJETAS --- */
@@ -362,11 +398,10 @@ button:focus-visible {
 .album-card:hover {
     transform: translateY(-6px) scale(1.02);
     background: var(--glass-bg-hover);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--glass-border-strong);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
 }
 
-/* MEJORA: efecto de presión al hacer clic */
 .album-card:active {
     transform: translateY(-3px) scale(0.98);
     transition: transform 0.05s;
@@ -444,7 +479,7 @@ button:focus-visible {
     position: absolute;
     bottom: 12px;
     right: 12px;
-    background: var(--blue-accent);
+    background: var(--purple-primary);
     color: white;
     width: 42px;
     height: 42px;
@@ -455,7 +490,7 @@ button:focus-visible {
     opacity: 0;
     transform: translateY(8px) scale(0.8);
     transition: var(--transition-premium);
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+    box-shadow: 0 4px 12px var(--purple-glow);
 }
 
 .play-hint i {
@@ -471,7 +506,7 @@ button:focus-visible {
 
 .card-info h3 {
     font-size: 0.9375rem;
-    font-weight: 700; /* MEJORA: peso más fuerte */
+    font-weight: 700;
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
@@ -507,7 +542,7 @@ button:focus-visible {
 
 .back-btn:hover {
     background: var(--glass-bg-hover);
-    border-color: rgba(255,255,255,0.25);
+    border-color: var(--glass-border-strong);
     transform: translateX(-4px);
 }
 
@@ -547,7 +582,7 @@ button:focus-visible {
 }
 
 .album-header-text h1 {
-    font-size: 2.625rem; /* 42px */
+    font-size: 2.625rem;
     font-weight: 800;
     letter-spacing: -1px;
     margin-bottom: 8px;
@@ -556,7 +591,7 @@ button:focus-visible {
 
 .album-header-text p {
     font-size: 1.125rem;
-    color: var(--blue-accent);
+    color: var(--purple-primary);
     font-weight: 600;
 }
 
@@ -599,8 +634,8 @@ button:focus-visible {
 }
 
 .track-row.active-track {
-    background: rgba(0, 122, 255, 0.12);
-    border-color: rgba(0, 122, 255, 0.25);
+    background: var(--purple-dim);
+    border-color: var(--glass-border-strong);
 }
 
 .track-number {
@@ -610,7 +645,7 @@ button:focus-visible {
 }
 
 .track-row.active-track .track-number {
-    color: var(--blue-accent);
+    color: var(--purple-primary);
 }
 
 .track-title {
@@ -623,7 +658,7 @@ button:focus-visible {
 }
 
 .track-row.active-track .track-title {
-    color: var(--blue-accent);
+    color: var(--purple-primary);
     font-weight: 600;
 }
 
@@ -658,28 +693,6 @@ button:focus-visible {
 .btn-track-actions:hover {
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.08);
-}
-
-/* Tooltips para elementos de la cola y mini reproductor (MEJORA) */
-.queue-item, .mini-player-content {
-    position: relative;
-}
-
-.queue-item:hover::after,
-.mini-metadata:hover::after {
-    content: attr(data-title);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.8);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    z-index: 100;
-    pointer-events: none;
 }
 
 /* --- MENÚ CONTEXTUAL --- */
@@ -720,7 +733,7 @@ button:focus-visible {
 }
 
 .context-option:hover {
-    background: var(--blue-accent);
+    background: var(--purple-primary);
     color: white;
 }
 
@@ -768,11 +781,10 @@ button:focus-visible {
 
 .mini-player:hover {
     background: rgba(18, 18, 26, 0.8);
-    border-color: rgba(255,255,255,0.2);
+    border-color: var(--glass-border-strong);
     transform: translateX(-50%) translateY(-2px);
 }
 
-/* MEJORA: solo la zona de metadata expande el reproductor */
 .mini-player .mini-metadata,
 .mini-player .mini-cover-wrapper {
     cursor: pointer;
@@ -847,7 +859,7 @@ button:focus-visible {
 .mini-progress-fill {
     height: 100%;
     width: 0%;
-    background: var(--blue-accent);
+    background: var(--purple-primary);
 }
 
 /* --- REPRODUCTOR COMPLETO --- */
@@ -971,7 +983,7 @@ button:focus-visible {
 
 .track-metadata p {
     font-size: 1.125rem;
-    color: var(--blue-accent);
+    color: var(--purple-primary);
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
@@ -1030,7 +1042,7 @@ button:focus-visible {
 .progress-bar-fill {
     height: 100%;
     width: 0%;
-    background: var(--blue-accent);
+    background: var(--purple-primary);
     border-radius: 2px;
 }
 
@@ -1059,7 +1071,7 @@ button:focus-visible {
     width: 12px;
     border-radius: 50%;
     background: white;
-    box-shadow: 0 0 10px rgba(0,122,255,0.8);
+    box-shadow: 0 0 10px var(--purple-glow);
     opacity: 0;
     transform: scale(0.6);
     transition: transform 0.15s ease, opacity 0.15s ease;
@@ -1111,11 +1123,10 @@ button:focus-visible {
 }
 
 .btn-icon.active-control {
-    color: var(--blue-accent) !important;
-    filter: drop-shadow(0 0 8px var(--blue-accent));
+    color: var(--purple-primary) !important;
+    filter: drop-shadow(0 0 8px var(--purple-glow));
 }
 
-/* MEJORA: efecto de presión en botones */
 .btn-icon:active,
 .btn-play-large:active,
 .btn-modal-primary:active,
@@ -1194,7 +1205,7 @@ button:focus-visible {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: var(--blue-accent);
+    background: var(--purple-primary);
 }
 
 /* --- PANELES LATERALES (COLA, EQ) --- */
@@ -1262,8 +1273,8 @@ button:focus-visible {
 }
 
 .queue-item.queue-active {
-    background: rgba(0, 122, 255, 0.1);
-    border-color: rgba(0, 122, 255, 0.3);
+    background: var(--purple-dim);
+    border-color: var(--glass-border-strong);
 }
 
 .queue-title {
@@ -1277,7 +1288,7 @@ button:focus-visible {
 }
 
 .queue-item.queue-active .queue-title {
-    color: var(--blue-accent);
+    color: var(--purple-primary);
 }
 
 .queue-artist {
@@ -1289,7 +1300,7 @@ button:focus-visible {
     width: 100%;
 }
 
-/* --- RESPONSIVIDAD MEJORADA --- */
+/* --- RESPONSIVIDAD --- */
 @media (max-width: 990px) {
     .player-layout {
         flex-direction: column;
@@ -1346,7 +1357,7 @@ button:focus-visible {
         padding: 12px 10px;
     }
     .content-wrapper {
-        padding: 16px 20px 120px 20px; /* MEJORA: más aire lateral */
+        padding: 16px 20px 120px 20px;
     }
     .global-header {
         padding: 16px 20px;
@@ -1375,13 +1386,13 @@ button:focus-visible {
         --sidebar-width: 60px;
     }
     .content-wrapper {
-        padding: 12px 16px 120px 16px; /* MEJORA: padding lateral más generoso */
+        padding: 12px 16px 120px 16px;
     }
     .global-header {
         padding: 12px 16px;
     }
     .album-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* MEJORA: un poco más grandes */
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 16px;
     }
     .album-card {
@@ -1428,19 +1439,10 @@ button:focus-visible {
         height: 400px;
         right: -10px;
     }
-    /* MEJORA: botones de la sidebar más grandes para touch */
     .menu-item, .playlist-link {
         padding: 12px;
     }
 }
-
-/* --- MODALES, ASISTENTE, ETC. (resto de tu CSS se mantiene igual, pero con las mejoras de :focus-visible y :active ya añadidas) --- */
-/* ... El resto de tu CSS (diario, reviews, juego, perfil, etc.) permanece igual ... */
-    .musik-chat-window {
-        width: calc(100vw - 32px);
-        height: 400px;
-        right: -10px;
-    }
 
 /* --- MODAL INTERACTIVO PREMIUM --- */
 .modal-overlay {
@@ -1459,8 +1461,8 @@ button:focus-visible {
 }
 
 .modal-content {
-    background-color: #18181c;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: var(--bg-card);
+    border: 1px solid var(--glass-border);
     border-radius: 16px;
     width: 100%;
     max-width: 420px;
@@ -1479,19 +1481,19 @@ button:focus-visible {
 .modal-header h3 {
     font-size: 18px;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--text-primary);
 }
 
 .btn-close-modal {
     background: none;
     border: none;
-    color: #a0a0a8;
+    color: var(--text-secondary);
     cursor: pointer;
     transition: color 0.2s;
 }
 
 .btn-close-modal:hover {
-    color: #ffffff;
+    color: var(--text-primary);
 }
 
 .modal-body {
@@ -1503,24 +1505,24 @@ button:focus-visible {
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #a0a0a8;
+    color: var(--text-secondary);
     margin-bottom: 8px;
 }
 
 .modal-body input {
     width: 100%;
-    background-color: #24242c;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-input);
+    border: 1px solid var(--glass-border);
     border-radius: 8px;
     padding: 12px 16px;
-    color: #ffffff;
+    color: var(--text-primary);
     font-size: 14px;
     outline: none;
     transition: border-color 0.2s;
 }
 
 .modal-body input:focus {
-    border-color: var(--blue-accent, #3b82f6);
+    border-color: var(--purple-primary);
 }
 
 .modal-footer {
@@ -1532,7 +1534,7 @@ button:focus-visible {
 .btn-modal-secondary {
     background: none;
     border: none;
-    color: #ffffff;
+    color: var(--text-primary);
     font-size: 14px;
     font-weight: 500;
     padding: 10px 16px;
@@ -1546,7 +1548,7 @@ button:focus-visible {
 }
 
 .btn-modal-primary {
-    background-color: var(--blue-accent, #3b82f6);
+    background-color: var(--purple-primary);
     color: #ffffff;
     border: none;
     font-size: 14px;
@@ -1571,7 +1573,7 @@ button:focus-visible {
 }
 
 /* ==========================================================================
-   ESTILOS DE NAVEGACIÓN Y PLAYLISTS (HOVER Y ACTIVO)
+   ESTILOS DE NAVEGACIÓN Y PLAYLISTS
    ========================================================================== */
 .sidebar-navigation-item, .playlist-link {
     display: flex;
@@ -1582,7 +1584,7 @@ button:focus-visible {
     background: transparent;
     border: none;
     border-radius: 6px;
-    color: #b3b3b3;
+    color: var(--text-secondary);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -1591,18 +1593,18 @@ button:focus-visible {
 }
 
 .sidebar-navigation-item:hover, .playlist-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    background-color: var(--glass-bg);
+    color: var(--text-primary);
 }
 
 .sidebar-navigation-item.active, .playlist-link.active {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: #1a7aff;
+    background-color: var(--purple-dim);
+    color: var(--purple-primary);
     font-weight: 600;
 }
 
 .sidebar-navigation-item.active i, .playlist-link.active i {
-    color: #1a7aff;
+    color: var(--purple-primary);
 }
 
 #playlistsContainer {
@@ -1629,7 +1631,7 @@ button:focus-visible {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--glass-border-strong);
     padding: 12px 20px;
     border-radius: 30px;
     color: #fff;
@@ -1641,11 +1643,11 @@ button:focus-visible {
 .musik-trigger-btn:hover {
     background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px 0 rgba(255, 255, 255, 0.05);
+    box-shadow: 0 12px 40px 0 var(--purple-glow);
 }
 
 .musik-icon-spark, .musik-btn-icon {
-    color: #a855f7;
+    color: var(--purple-primary);
 }
 
 .musik-btn-text {
@@ -1662,7 +1664,7 @@ button:focus-visible {
     background: rgba(15, 15, 20, 0.75);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border-strong);
     border-radius: 20px;
     display: flex;
     flex-direction: column;
@@ -1681,7 +1683,7 @@ button:focus-visible {
 .musik-chat-header {
     background: rgba(255, 255, 255, 0.03);
     padding: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--glass-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1751,7 +1753,7 @@ button:focus-visible {
 }
 
 .msg-user {
-    background: #a855f7;
+    background: var(--purple-primary);
     color: #fff;
     align-self: flex-end;
     border-bottom-right-radius: 4px;
@@ -1760,7 +1762,7 @@ button:focus-visible {
 .musik-chat-input-area {
     padding: 12px;
     background: rgba(0, 0, 0, 0.2);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--glass-border);
     display: flex;
     gap: 8px;
 }
@@ -1768,7 +1770,7 @@ button:focus-visible {
 #musikInput {
     flex: 1;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
     padding: 10px 14px;
     border-radius: 20px;
     color: #fff;
@@ -1777,11 +1779,11 @@ button:focus-visible {
 }
 
 #musikInput:focus {
-    border-color: #a855f7;
+    border-color: var(--purple-primary);
 }
 
 #btnMusikSend {
-    background: #a855f7;
+    background: var(--purple-primary);
     border: none;
     color: #fff;
     width: 36px;
@@ -1795,7 +1797,7 @@ button:focus-visible {
 }
 
 #btnMusikSend:hover {
-    background: #c084fc;
+    background: var(--purple-hover);
 }
 
 /* ==========================================================================
@@ -1803,7 +1805,7 @@ button:focus-visible {
    ========================================================================== */
 .btn-action-edit, .btn-action-delete {
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
     color: var(--text-primary);
     display: inline-flex;
     align-items: center;
@@ -1818,7 +1820,7 @@ button:focus-visible {
 
 .btn-action-edit:hover {
     background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    border-color: var(--glass-border-strong);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
 }
@@ -1845,7 +1847,7 @@ button:focus-visible {
 
 .eq-panel-row {
     background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border);
     border-radius: 14px;
     padding: 12px 14px;
     display: flex;
@@ -1856,7 +1858,7 @@ button:focus-visible {
 
 .eq-panel-row:hover {
     background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: var(--glass-border-strong);
 }
 
 .eq-panel-label-group {
@@ -1915,8 +1917,8 @@ button:focus-visible {
 }
 
 #eqBass::-webkit-slider-thumb {
-    background: #a855f7;
-    box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+    background: var(--purple-primary);
+    box-shadow: 0 0 12px var(--purple-glow);
 }
 
 #eqVocals::-webkit-slider-thumb {
@@ -1925,14 +1927,14 @@ button:focus-visible {
 }
 
 #eqTreble::-webkit-slider-thumb {
-    background: #3b82f6;
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+    background: var(--purple-primary);
+    box-shadow: 0 0 12px var(--purple-glow);
 }
 
 .btn-eq-reset {
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #a855f7;
+    border: 1px solid var(--glass-border);
+    color: var(--purple-primary);
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
@@ -1945,14 +1947,14 @@ button:focus-visible {
 }
 
 .btn-eq-reset:hover {
-    background: rgba(168, 85, 247, 0.15);
-    border-color: rgba(168, 85, 247, 0.3);
-    color: #c084fc;
+    background: var(--purple-dim);
+    border-color: var(--glass-border-strong);
+    color: var(--purple-hover);
     transform: translateY(-1px);
 }
 
 /* ==========================================================================
-   ESTILOS DE CRÍTICAS (LETTERBOXD SONGS SYSTEM)
+   ESTILOS DE CRÍTICAS
    ========================================================================== */
 #reviewRatingStars i {
     transition: color 0.15s ease;
@@ -1988,8 +1990,8 @@ button:focus-visible {
 }
 
 .btn-edit-review:hover, .btn-edit-integrated-review:hover {
-    color: var(--blue-accent) !important;
-    background: rgba(0, 122, 255, 0.1) !important;
+    color: var(--purple-primary) !important;
+    background: var(--purple-dim) !important;
     transform: scale(1.1);
 }
 
@@ -2006,7 +2008,7 @@ button:focus-visible {
 }
 
 #reviewTextInput:focus {
-    border-color: var(--blue-accent) !important;
+    border-color: var(--purple-primary) !important;
     background-color: rgba(0,0,0,0.5) !important;
 }
 
@@ -2025,17 +2027,17 @@ button:focus-visible {
 }
 
 #diarySongSelector:focus, #integratedReviewText:focus, #diarySearchFilter:focus, #editReviewTextarea:focus {
-    border-color: var(--blue-accent) !important;
+    border-color: var(--purple-primary) !important;
     background-color: rgba(0,0,0,0.5) !important;
 }
 
 #btnDiarySortRecent:hover, #btnDiarySortRating:hover {
-    background: rgba(0, 122, 255, 0.15) !important;
+    background: var(--purple-dim) !important;
     color: #fff !important;
 }
 
 /* ==========================================================================
-   TRASLACIÓN DE ESTILOS INTEGRADOS DESDE EL HTML
+   DIARIO INTEGRADO
    ========================================================================== */
 .diary-header {
     display: flex;
@@ -2051,10 +2053,10 @@ button:focus-visible {
 .diary-badge {
     font-size: 13px;
     color: var(--text-secondary);
-    background: rgba(0, 122, 255, 0.1);
+    background: var(--purple-dim);
     padding: 6px 14px;
     border-radius: 20px;
-    border: 1px solid rgba(0, 122, 255, 0.2);
+    border: 1px solid var(--glass-border-strong);
     font-weight: 600;
 }
 
@@ -2106,7 +2108,7 @@ button:focus-visible {
 }
 
 .diary-stat-number.blue-accent {
-    color: var(--blue-accent);
+    color: var(--purple-primary);
 }
 
 .diary-stat-number.gold-accent {
@@ -2176,8 +2178,8 @@ button:focus-visible {
 }
 
 .diary-sort-btn.active {
-    background: rgba(0, 122, 255, 0.15);
-    border: 1px solid rgba(0, 122, 255, 0.45);
+    background: var(--purple-dim);
+    border: 1px solid var(--glass-border-strong);
     color: white;
 }
 
@@ -2205,7 +2207,7 @@ button:focus-visible {
 .diary-search-input {
     width: 100%;
     background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 8px 12px 8px 34px;
     color: white;
@@ -2216,7 +2218,7 @@ button:focus-visible {
 
 .diary-filter-rewatched-btn {
     background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid var(--glass-border);
     color: var(--text-secondary);
     padding: 8px 14px;
     border-radius: 12px;
@@ -2277,8 +2279,8 @@ button:focus-visible {
 
 .diary-select-input {
     width: 100%;
-    background: #1c1c24;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--bg-input);
+    border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 12px;
     color: white;
@@ -2291,7 +2293,7 @@ button:focus-visible {
 .diary-current-playing-btn {
     background: none;
     border: none;
-    color: var(--blue-accent);
+    color: var(--purple-primary);
     font-size: 11px;
     font-weight: 600;
     text-align: left;
@@ -2312,7 +2314,7 @@ button:focus-visible {
     background: rgba(0,0,0,0.2);
     padding: 8px 12px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
 }
 
 .diary-stars-input {
@@ -2325,7 +2327,7 @@ button:focus-visible {
 
 .diary-rewatch-toggle-btn {
     background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 6px 12px;
     color: #a0a0a8;
@@ -2342,7 +2344,7 @@ button:focus-visible {
     width: 100%;
     height: 130px;
     background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 12px;
     color: white;
@@ -2436,7 +2438,7 @@ button:focus-visible {
     width: 100%;
     height: 64px;
     background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid var(--glass-border);
     border-radius: 8px;
     padding: 8px;
     color: white;
@@ -2474,9 +2476,9 @@ button:focus-visible {
 }
 
 .sidebar-reviews-tab-btn.active {
-    color: var(--blue-accent);
+    color: var(--purple-primary);
     font-weight: 700;
-    border-bottom: 2px solid var(--blue-accent);
+    border-bottom: 2px solid var(--purple-primary);
 }
 
 .sidebar-reviews-tab-btn:not(.active) {
@@ -2508,8 +2510,8 @@ button:focus-visible {
 .modal-input-compact {
     margin-bottom: 12px !important;
     width: 100%;
-    background: #24242c;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--bg-input);
+    border: 1px solid var(--glass-border);
     border-radius: 8px;
     padding: 10px 14px;
     color: #fff;
@@ -2523,8 +2525,8 @@ button:focus-visible {
 
 .modal-input-row-flex {
     flex: 1;
-    background: #24242c;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--bg-input);
+    border: 1px solid var(--glass-border);
     border-radius: 8px;
     padding: 10px 12px;
     color: #fff;
@@ -2532,7 +2534,7 @@ button:focus-visible {
 }
 
 .btn-modal-upload-cover {
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid var(--glass-border);
     font-size: 12px;
     padding: 0 12px;
     white-space: nowrap;
@@ -2563,7 +2565,7 @@ button:focus-visible {
 }
 
 .btn-add-song-dashed {
-    border: 1px dashed rgba(255,255,255,0.2);
+    border: 1px dashed var(--glass-border);
     width: 100%;
     font-size: 13px;
     text-align: center;
@@ -2576,7 +2578,7 @@ button:focus-visible {
 }
 
 .modal-footer-divided {
-    border-top: 1px solid rgba(255,255,255,0.05);
+    border-top: 1px solid var(--glass-border);
     padding-top: 15px;
     margin-top: 10px;
 }
@@ -2602,7 +2604,7 @@ button:focus-visible {
 
 .edit-review-header-icon {
     width: 18px;
-    color: var(--blue-accent);
+    color: var(--purple-primary);
 }
 
 .edit-review-body {
@@ -2661,7 +2663,7 @@ button:focus-visible {
     background: rgba(0,0,0,0.2);
     padding: 8px 12px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
 }
 
 .edit-review-stars-container {
@@ -2679,7 +2681,7 @@ button:focus-visible {
 
 .edit-review-rewatch-btn {
     background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 6px 12px;
     color: #a0a0a8;
@@ -2696,7 +2698,7 @@ button:focus-visible {
     width: 100%;
     height: 120px;
     background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 12px;
     color: white;
@@ -2723,7 +2725,7 @@ button:focus-visible {
 
 .musik-import-btn {
     background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid var(--glass-border);
     color: #fff;
     width: 36px;
     height: 36px;
@@ -2736,13 +2738,13 @@ button:focus-visible {
 }
 
 .musik-import-btn:hover {
-    background: rgba(168, 85, 247, 0.15);
-    border-color: rgba(168, 85, 247, 0.35);
+    background: var(--purple-dim);
+    border-color: var(--glass-border-strong);
 }
 
 .musik-import-btn-icon {
     width: 16px;
-    color: #a855f7;
+    color: var(--purple-primary);
 }
 
 .edit-review-stars-container i {
@@ -2776,9 +2778,9 @@ button:focus-visible {
 }
 
 .tag-album {
-    background: rgba(0, 122, 255, 0.25);
-    color: #60a5fa;
-    border: 1px solid rgba(0, 122, 255, 0.4);
+    background: var(--purple-dim);
+    color: var(--purple-primary);
+    border: 1px solid var(--glass-border-strong);
 }
 
 .tag-playlist {
@@ -2788,7 +2790,7 @@ button:focus-visible {
 }
 
 .play-hint-purple {
-    background: #a855f7 !important;
+    background: var(--purple-primary) !important;
 }
 
 .playlist-inline-adder {
@@ -2806,7 +2808,7 @@ button:focus-visible {
 
 .playlist-inline-adder:hover {
     background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--glass-border-strong);
 }
 
 .adder-header {
@@ -2818,7 +2820,7 @@ button:focus-visible {
 .adder-icon {
     width: 24px;
     height: 24px;
-    color: #a855f7;
+    color: var(--purple-primary);
 }
 
 .adder-header h4 {
@@ -2852,12 +2854,12 @@ button:focus-visible {
 }
 
 .adder-select:focus {
-    border-color: #a855f7;
-    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+    border-color: var(--purple-primary);
+    box-shadow: 0 0 0 2px var(--purple-glow);
 }
 
 .btn-adder-add {
-    background: #a855f7;
+    background: var(--purple-primary);
     color: white;
     border: none;
     border-radius: 10px;
@@ -2872,7 +2874,7 @@ button:focus-visible {
 }
 
 .btn-adder-add:hover:not(:disabled) {
-    background: #b56ff9;
+    background: var(--purple-hover);
     transform: translateY(-1px);
 }
 
@@ -2892,8 +2894,8 @@ button:focus-visible {
         right: 0;
     }
 }
+
 /* --- ANIMACIÓN PREMIUM PARA LAS ESTRELLAS EN REVIEWS --- */
-/* Aseguramos que los contenedores de estrellas tengan tamaño */
 .diary-stars-input i,
 .edit-review-stars-container i,
 #integratedRatingStars i,
@@ -2908,7 +2910,6 @@ button:focus-visible {
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
 }
 
-/* Afectamos al SVG interno (Lucide) para la animación */
 .diary-stars-input i svg,
 .edit-review-stars-container i svg,
 #integratedRatingStars i svg,
@@ -2919,7 +2920,6 @@ button:focus-visible {
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
 }
 
-/* Hover: la estrella (SVG) se agranda y brilla */
 .diary-stars-input i:hover svg,
 .edit-review-stars-container i:hover svg,
 #integratedRatingStars i:hover svg,
@@ -2929,7 +2929,6 @@ button:focus-visible {
     filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.6));
 }
 
-/* Cambio de color del SVG al hover */
 .diary-stars-input i:hover svg,
 .edit-review-stars-container i:hover svg,
 #integratedRatingStars i:hover svg,
@@ -2939,7 +2938,6 @@ button:focus-visible {
     color: #facc15 !important;
 }
 
-/* Efecto de opacidad en las siguientes estrellas (opcional) */
 .diary-stars-input i:hover ~ i svg,
 .edit-review-stars-container i:hover ~ i svg,
 #integratedRatingStars i:hover ~ i svg,
@@ -2948,7 +2946,7 @@ button:focus-visible {
     opacity: 0.7;
 }
 
-/* --- Utilidades de espaciado y layout (sin estilos en línea) --- */
+/* --- Utilidades --- */
 .mt-48 {
     margin-top: 48px;
 }
@@ -2964,7 +2962,7 @@ button:focus-visible {
     margin-bottom: 20px;
 }
 
-/* --- Botones del chat (cabecera) --- */
+/* --- Botones del chat --- */
 .chat-header-buttons {
     display: flex;
     gap: 4px;
@@ -2991,7 +2989,7 @@ button:focus-visible {
     color: #fff;
 }
 
-/* Ajuste de iconos pequeños para que no pierdan tamaño */
+/* Ajuste de iconos pequeños */
 .diary-filter-rewatched-btn i,
 .diary-current-playing-btn i,
 .diary-save-btn i,
@@ -3003,119 +3001,117 @@ button:focus-visible {
     height: 13px;
 }
 
-/* Asegurar que los botones de acción de álbum no tengan estilos inline extra */
 .btn-action-edit i,
 .btn-action-delete i {
     width: 14px;
     height: 14px;
 }
-/* ==================== VISTA DEL JUEGO (INTEGRADA) ==================== */
+
+/* ==================== VISTA DEL JUEGO ==================== */
 #gameView {
-  display: block;
-  width: 100%;
-  background: transparent;
-  padding: 0;
-  margin: 0;
+    display: block;
+    width: 100%;
+    background: transparent;
+    padding: 0;
+    margin: 0;
 }
 
 .game-container {
-  max-width: 800px;
-  width: 90%;
-  margin: 30px auto;
-  background: rgba(30, 20, 45, 0.65);
-  backdrop-filter: blur(12px);
-  border-radius: 32px;
-  border: 1px solid rgba(180, 130, 255, 0.3);
-  padding: 2rem 1.8rem;
-  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4);
+    max-width: 800px;
+    width: 90%;
+    margin: 30px auto;
+    background: rgba(30, 20, 45, 0.65);
+    backdrop-filter: blur(12px);
+    border-radius: 32px;
+    border: 1px solid var(--glass-border-strong);
+    padding: 2rem 1.8rem;
+    box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4);
 }
 
 .game-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding-bottom: 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 0.8rem;
 }
 
 .game-header h2 {
-  font-size: 1.9rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #c084fc, #a855f7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  margin: 0;
+    font-size: 1.9rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #c084fc, var(--purple-primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 0;
 }
 
 .game-score {
-  font-size: 1.3rem;
-  font-weight: bold;
-  background: rgba(168, 85, 247, 0.25);
-  padding: 0.3rem 1.2rem;
-  border-radius: 60px;
-  border: 1px solid rgba(200, 130, 255, 0.5);
-  color: #e9d5ff;
+    font-size: 1.3rem;
+    font-weight: bold;
+    background: var(--purple-dim);
+    padding: 0.3rem 1.2rem;
+    border-radius: 60px;
+    border: 1px solid var(--glass-border-strong);
+    color: #e9d5ff;
 }
 
-/* Área de la carátula con más espacio inferior */
 .game-cover-area {
-  position: relative;
-  width: 260px;
-  margin: 0 auto 2.5rem;  /* más espacio abajo */
-  cursor: pointer;
-  text-align: center;
+    position: relative;
+    width: 260px;
+    margin: 0 auto 2.5rem;
+    cursor: pointer;
+    text-align: center;
 }
 
 .game-cover-blur {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 24px;
-  filter: blur(10px);
-  transition: filter 0.3s, transform 0.3s;
-  box-shadow: 0 12px 25px -5px rgba(0,0,0,0.5);
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 24px;
+    filter: blur(10px);
+    transition: filter 0.3s, transform 0.3s;
+    box-shadow: 0 12px 25px -5px rgba(0,0,0,0.5);
 }
 
 .game-cover-blur:hover {
-  filter: blur(5px);
-  transform: scale(1.02);
+    filter: blur(5px);
+    transform: scale(1.02);
 }
 
-/* Indicador "Sonando..." separado y más visible */
 .game-playing-indicator {
-  position: static;  /* ya no absoluto, ahora fluye debajo */
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  background: rgba(0, 0, 0, 0.65);
-  padding: 8px 18px;
-  border-radius: 60px;
-  width: fit-content;
-  margin: 15px auto 0 auto; /* separado de la imagen */
-  font-size: 0.9rem;
-  backdrop-filter: blur(6px);
-  color: #c084fc;
-  font-weight: 500;
+    position: static;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 8px 18px;
+    border-radius: 60px;
+    width: fit-content;
+    margin: 15px auto 0 auto;
+    font-size: 0.9rem;
+    backdrop-filter: blur(6px);
+    color: #c084fc;
+    font-weight: 500;
 }
 
 .wave-bar {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  height: 20px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    height: 20px;
 }
 
 .wave {
-  width: 3px;
-  height: 8px;
-  background: #c084fc;
-  border-radius: 2px;
-  animation: wave 0.6s infinite ease alternate;
+    width: 3px;
+    height: 8px;
+    background: #c084fc;
+    border-radius: 2px;
+    animation: wave 0.6s infinite ease alternate;
 }
 
 .wave:nth-child(2) { animation-delay: 0.1s; height: 12px; }
@@ -3124,151 +3120,147 @@ button:focus-visible {
 .wave:nth-child(5) { animation-delay: 0.4s; height: 8px; }
 
 @keyframes wave {
-  0% { height: 4px; opacity: 0.5; }
-  100% { height: 18px; opacity: 1; }
+    0% { height: 4px; opacity: 0.5; }
+    100% { height: 18px; opacity: 1; }
 }
 
-/* Opciones: botones con separación vertical */
 .game-options {
-  display: flex;
-  flex-direction: column;   /* columna para separarlos bien */
-  align-items: center;
-  gap: 1rem;
-  margin: 2rem 0;
-  width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    width: 100%;
 }
 
 .game-option-btn {
-  background: rgba(20, 15, 35, 0.9);
-  border: 1px solid rgba(160, 120, 255, 0.4);
-  border-radius: 60px;
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #f0f0ff;
-  backdrop-filter: blur(4px);
-  width: 80%;
-  max-width: 320px;
-  text-align: center;
-  margin: 0 auto;
+    background: rgba(20, 15, 35, 0.9);
+    border: 1px solid rgba(160, 120, 255, 0.4);
+    border-radius: 60px;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #f0f0ff;
+    backdrop-filter: blur(4px);
+    width: 80%;
+    max-width: 320px;
+    text-align: center;
+    margin: 0 auto;
 }
 
 .game-option-btn:hover:not(:disabled) {
-  background: rgba(120, 80, 200, 0.6);
-  transform: scale(1.02);
-  border-color: #c084fc;
+    background: rgba(120, 80, 200, 0.6);
+    transform: scale(1.02);
+    border-color: #c084fc;
 }
 
 .game-option-btn.correct {
-  background: #22c55e;
-  border-color: #22c55e;
-  color: white;
-  animation: pulse 0.3s ease;
+    background: #22c55e;
+    border-color: #22c55e;
+    color: white;
+    animation: pulse 0.3s ease;
 }
 
 .game-option-btn.incorrect {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: white;
-  animation: shake 0.2s ease-in-out 0s 2;
+    background: #ef4444;
+    border-color: #ef4444;
+    color: white;
+    animation: shake 0.2s ease-in-out 0s 2;
 }
 
 @keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
-  100% { transform: translateX(0); }
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+    100% { transform: translateX(0); }
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
-/* Botón siguiente */
 .game-controls {
-  display: flex;
-  justify-content: center;
-  margin: 2rem 0 1rem;
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0 1rem;
 }
 
 .game-next-btn {
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-  border: none;
-  border-radius: 60px;
-  padding: 0.7rem 2rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  transition: all 0.2s;
-  color: white;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    background: linear-gradient(135deg, var(--purple-primary), var(--purple-hover));
+    border: none;
+    border-radius: 60px;
+    padding: 0.7rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+    color: white;
+    box-shadow: 0 4px 12px var(--purple-glow);
 }
 
 .game-next-btn:hover {
-  transform: scale(1.02);
-  background: linear-gradient(135deg, #7c3aed, #5b21b6);
-  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+    transform: scale(1.02);
+    background: linear-gradient(135deg, var(--purple-hover), #5b21b6);
+    box-shadow: 0 6px 16px var(--purple-glow);
 }
 
 .game-next-btn i {
-  width: 18px;
-  height: 18px;
+    width: 18px;
+    height: 18px;
 }
 
-/* Mensaje de resultado */
 .game-message {
-  text-align: center;
-  margin-top: 1.5rem;
-  font-size: 1.15rem;
-  font-weight: 500;
-  padding: 0.6rem;
-  border-radius: 60px;
-  background: rgba(0,0,0,0.3);
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 1.15rem;
+    font-weight: 500;
+    padding: 0.6rem;
+    border-radius: 60px;
+    background: rgba(0,0,0,0.3);
 }
 
 .game-message.correct-msg {
-  background: rgba(34, 197, 94, 0.2);
-  color: #bef264;
+    background: rgba(34, 197, 94, 0.2);
+    color: #bef264;
 }
 
 .game-message.incorrect-msg {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
 }
 
-/* Responsive */
 @media (max-width: 640px) {
-  .game-container {
-    width: 95%;
-    padding: 1.2rem;
-  }
-  .game-cover-area {
-    width: 200px;
-    margin-bottom: 2rem;
-  }
-  .game-option-btn {
-    width: 90%;
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
-  }
-  .game-header h2 {
-    font-size: 1.4rem;
-  }
-  .game-score {
-    font-size: 1rem;
-  }
-  .game-playing-indicator {
-    margin-top: 10px;
-    padding: 5px 12px;
-    font-size: 0.75rem;
-  }
+    .game-container {
+        width: 95%;
+        padding: 1.2rem;
+    }
+    .game-cover-area {
+        width: 200px;
+        margin-bottom: 2rem;
+    }
+    .game-option-btn {
+        width: 90%;
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+    .game-header h2 {
+        font-size: 1.4rem;
+    }
+    .game-score {
+        font-size: 1rem;
+    }
+    .game-playing-indicator {
+        margin-top: 10px;
+        padding: 5px 12px;
+        font-size: 0.75rem;
+    }
 }
 
 /* ========== PERFIL ========== */
@@ -3291,7 +3283,7 @@ button:focus-visible {
     height: 100px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid var(--blue-accent);
+    border: 2px solid var(--purple-primary);
 }
 
 .profile-header h1 {
@@ -3324,7 +3316,7 @@ button:focus-visible {
 .stat-number {
     font-size: 2rem;
     font-weight: 800;
-    color: var(--blue-accent);
+    color: var(--purple-primary);
 }
 
 .stat-label {
@@ -3402,14 +3394,12 @@ button:focus-visible {
     background: var(--glass-bg-hover);
 }
 
-/* Sidebar footer */
 .sidebar-footer {
     margin-top: auto;
     padding: 16px;
     border-top: 1px solid var(--glass-border);
 }
 
-/* Ajustes menores responsivos para perfil */
 @media (max-width: 640px) {
     .profile-header {
         flex-direction: column;
@@ -3424,7 +3414,7 @@ button:focus-visible {
 }
 
 .edit-profile-btn {
-    background: var(--blue-accent);
+    background: var(--purple-primary);
     color: white;
     border: none;
     padding: 10px 24px;
@@ -3436,12 +3426,12 @@ button:focus-visible {
 }
 
 .edit-profile-btn:hover {
-    background: var(--blue-hover);
+    background: var(--purple-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+    box-shadow: 0 4px 12px var(--purple-glow);
 }
 
-/* Estado base: "Seguir" (Cuando no lo sigues todavía) */
+/* Estado base: "Seguir" */
 .artist-follow-btn {
     display: inline-flex;
     align-items: center;
@@ -3458,28 +3448,24 @@ button:focus-visible {
     transition: all 0.2s ease-in-out;
 }
 
-/* Efecto Hover para el estado base */
 .artist-follow-btn:hover {
     background-color: rgba(255, 255, 255, 0.1);
     border-color: #ffffff;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
-/* ----------------------------------------------------------- */
-
-/* Estado activo: "Siguiendo" / ".following" (Copia el estilo de Volver a la Biblioteca) */
+/* Estado activo: "Siguiendo" */
 .artist-follow-btn.following {
-    background-color: rgba(30, 41, 59, 0.5); /* Fondo oscuro semitransparente azulado */
+    background-color: rgba(30, 41, 59, 0.5);
     color: #ffffff;
-    border: 1px solid rgba(147, 197, 253, 0.3); /* Borde azul claro sutil */
-    box-shadow: 0 0 12px rgba(147, 197, 253, 0.2); /* El resplandor (glow) azul de tu diseño */
+    border: 1px solid var(--glass-border-strong);
+    box-shadow: 0 0 12px var(--purple-glow);
 }
 
-/* Efecto Hover cuando ya lo estás siguiendo (por si quieren dejar de seguir) */
 .artist-follow-btn.following:hover {
-    background-color: rgba(147, 197, 253, 0.15);
-    border-color: rgba(147, 197, 253, 0.6);
-    box-shadow: 0 0 15px rgba(147, 197, 253, 0.4);
+    background-color: var(--purple-dim);
+    border-color: var(--glass-border-strong);
+    box-shadow: 0 0 15px var(--purple-glow);
 }
 
 /* Estilos para mensajes del chat */
@@ -3505,44 +3491,36 @@ button:focus-visible {
     font-size: 0.9em;
 }
 
-/* Hace que el nombre del artista en el reproductor full sea clickeable */
-.fullplayer-artist-clickable {
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-.fullplayer-artist-clickable:hover {
-  color: var(--blue-accent);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-/* También si usas el párrafo directamente */
-#currentArtist {
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-#currentArtist:hover {
-  color: var(--blue-accent);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-/* Estilo para el nombre del artista clickeable en el full player */
+/* Artista clickeable en full player */
 .fullplayer-artist-clickable {
     cursor: pointer;
-    color: var(--text-primary) !important;  /* blanco/gris claro, no azul */
+    color: var(--text-primary) !important;
     transition: color 0.2s ease, text-decoration 0.2s ease;
     font-weight: 600;
 }
 
 .fullplayer-artist-clickable:hover {
-    color: var(--blue-accent) !important;   /* azul al pasar el mouse */
+    color: var(--purple-primary) !important;
     text-decoration: underline;
     text-underline-offset: 4px;
 }
 
-/* Opcional: si el párrafo contenedor tiene color azul, lo neutralizamos */
 #currentArtist {
     color: var(--text-primary);
 }
+#currentArtist:hover {
+    color: var(--purple-primary);
+}
 
+.icon{
+  /* Define el tamaño visual que quieres en tu interfaz */
+  width: 32px; 
+  height: auto; /* Permite que la altura se calcule sola manteniendo la proporción */
+  
+  /* Evita que el icono se deforme si en algún punto se fuerzan ambas medidas */
+  object-fit: contain; 
+  
+  /* Asegura máxima nitidez al escalar imágenes con bordes finos */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}

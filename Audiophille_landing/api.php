@@ -160,7 +160,7 @@ switch ($action) {
 }
 
 // ============================================================
-// FUNCIONES EXISTENTES (sin cambios, pero con try-catch)
+// FUNCIONES EXISTENTES
 // ============================================================
 
 function getInitialData($pdo, $user_id)
@@ -450,6 +450,7 @@ function getReviews($pdo, $user_id)
     $stmt->execute([$user_id]);
     sendJson(['success' => true, 'reviews' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
 }
+
 function importSong($pdo, $user_id, $files)
 {
     if (!isset($files['audio']) || $files['audio']['error'] !== UPLOAD_ERR_OK) {
@@ -459,7 +460,6 @@ function importSong($pdo, $user_id, $files)
     $uploadDir = __DIR__ . '/uploads/audios/';
     if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-    // Limpiar nombre de archivo
     $originalName = basename($files['audio']['name']);
     $cleanName = preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
     $filename = time() . '_' . $cleanName;
@@ -468,8 +468,6 @@ function importSong($pdo, $user_id, $files)
 
     if (move_uploaded_file($files['audio']['tmp_name'], $target)) {
         $titulo = pathinfo($originalName, PATHINFO_FILENAME);
-
-        // ✅ GUARDAR RUTA RELATIVA (NO ABSOLUTA)
         $relativePath = 'uploads/audios/' . $filename;
 
         $stmt = $pdo->prepare("INSERT INTO canciones (titulo, archivo_url, es_sistema, id_usuario_subio) VALUES (?, ?, 0, ?)");
@@ -485,6 +483,7 @@ function importSong($pdo, $user_id, $files)
         sendJson(['success' => false, 'message' => 'Error al guardar archivo']);
     }
 }
+
 function updateEq($pdo, $user_id, $data)
 {
     $bass = intval($data['bass'] ?? 0);
@@ -836,6 +835,7 @@ function getUserStats($pdo, $user_id)
 // ============================================================
 // FUNCIONES SOCIALES
 // ============================================================
+
 function getPublicProfile($pdo, $current_user_id, $data)
 {
     $target_user_id = $data['user_id'] ?? 0;
@@ -843,7 +843,6 @@ function getPublicProfile($pdo, $current_user_id, $data)
         sendJson(['success' => false, 'message' => 'ID de usuario requerido']);
     }
 
-    // Datos del usuario (sin email)
     $stmt = $pdo->prepare("SELECT id_usuario, nombre_usuario, avatar, fecha_registro FROM usuarios WHERE id_usuario = ?");
     $stmt->execute([$target_user_id]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -852,7 +851,6 @@ function getPublicProfile($pdo, $current_user_id, $data)
         sendJson(['success' => false, 'message' => 'Usuario no encontrado']);
     }
 
-    // Estadísticas
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM playlists WHERE id_usuario = ?");
     $stmt->execute([$target_user_id]);
     $total_playlists = (int)$stmt->fetchColumn();
@@ -869,12 +867,10 @@ function getPublicProfile($pdo, $current_user_id, $data)
     $stmt->execute([$target_user_id]);
     $following = (int)$stmt->fetchColumn();
 
-    // Playlists públicas del usuario
     $stmt = $pdo->prepare("SELECT id_playlist, nombre, portada_url FROM playlists WHERE id_usuario = ?");
     $stmt->execute([$target_user_id]);
     $playlists = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Reseñas recientes
     $stmt = $pdo->prepare("
         SELECT r.puntuacion, r.comentario, r.fecha, 
                r.titulo_cancion_texto, r.artista_texto,
@@ -889,19 +885,18 @@ function getPublicProfile($pdo, $current_user_id, $data)
     $stmt->execute([$target_user_id]);
     $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Verificar si el usuario actual sigue a este usuario
     $stmt = $pdo->prepare("SELECT 1 FROM seguidores WHERE id_usuario = ? AND id_seguido = ?");
     $stmt->execute([$current_user_id, $target_user_id]);
     $is_following = $stmt->fetchColumn() ? true : false;
 
-    // Verificar si son amigos mutuos (ambos se siguen)
     $stmt = $pdo->prepare("
-    SELECT 1 FROM seguidores s1
-    JOIN seguidores s2 ON s1.id_usuario = s2.id_seguido AND s1.id_seguido = s2.id_usuario
-    WHERE s1.id_usuario = ? AND s1.id_seguido = ?
-");
+        SELECT 1 FROM seguidores s1
+        JOIN seguidores s2 ON s1.id_usuario = s2.id_seguido AND s1.id_seguido = s2.id_usuario
+        WHERE s1.id_usuario = ? AND s1.id_seguido = ?
+    ");
     $stmt->execute([$current_user_id, $target_user_id]);
     $are_friends = $stmt->fetchColumn() ? true : false;
+
     sendJson([
         'success' => true,
         'user' => $user,
@@ -1027,7 +1022,6 @@ function getFeed($pdo, $user_id, $data)
         $stmt->execute();
         $feed = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Total
         $sqlTotal = "SELECT COUNT(*) FROM actividad_social WHERE id_usuario IN ($placeholders)";
         if ($filter !== 'all') {
             $sqlTotal .= " AND tipo_actividad = ?";
@@ -1074,8 +1068,6 @@ function exploreUsers($pdo, $user_id, $data)
         ";
 
         $stmt = $pdo->prepare($sql);
-
-        // ✅ Enlazar parámetros con tipos explícitos
         $stmt->bindValue(1, $user_id, PDO::PARAM_INT);
         $stmt->bindValue(2, $search, PDO::PARAM_STR);
         $stmt->bindValue(3, $limit, PDO::PARAM_INT);
@@ -1123,7 +1115,6 @@ function addPlaylistToLibrary($pdo, $user_id, $data)
         sendJson(['success' => false, 'message' => 'Esta playlist es tuya, no puedes copiarla a ti mismo']);
     }
 
-    // Verificar si ya existe una copia en la biblioteca del usuario
     $stmt = $pdo->prepare("SELECT id_playlist FROM playlists WHERE id_usuario = ? AND nombre = ?");
     $stmt->execute([$user_id, $playlist['nombre'] . ' (copia)']);
     if ($stmt->fetchColumn()) {
@@ -1149,6 +1140,10 @@ function addPlaylistToLibrary($pdo, $user_id, $data)
     sendJson(['success' => true, 'id_playlist' => $nuevo_id, 'nombre' => $nuevo_nombre]);
 }
 
+// ============================================================
+// ⭐ FUNCIÓN MERGE PLAYLISTS MEJORADA
+// ============================================================
+
 function mergePlaylists($pdo, $user_id, $data)
 {
     $friend_id = $data['friend_id'] ?? 0;
@@ -1156,7 +1151,7 @@ function mergePlaylists($pdo, $user_id, $data)
         sendJson(['success' => false, 'message' => 'ID de amigo requerido']);
     }
 
-    // Verificar que son amigos mutuos
+    // 1. Verificar que son amigos mutuos
     $stmt = $pdo->prepare("
         SELECT 1 FROM seguidores s1
         JOIN seguidores s2 ON s1.id_usuario = s2.id_seguido AND s1.id_seguido = s2.id_usuario
@@ -1164,10 +1159,10 @@ function mergePlaylists($pdo, $user_id, $data)
     ");
     $stmt->execute([$user_id, $friend_id]);
     if (!$stmt->fetchColumn()) {
-        sendJson(['success' => false, 'message' => 'Debes ser amigo de este usuario para fusionar playlists']);
+        sendJson(['success' => false, 'message' => 'Deben ser amigos mutuos para fusionar playlists']);
     }
 
-    // Obtener nombres
+    // 2. Obtener nombres
     $stmt = $pdo->prepare("SELECT nombre_usuario FROM usuarios WHERE id_usuario = ?");
     $stmt->execute([$user_id]);
     $mi_nombre = $stmt->fetchColumn();
@@ -1176,29 +1171,232 @@ function mergePlaylists($pdo, $user_id, $data)
 
     $nombre_playlist = "Fusión: " . $mi_nombre . " + " . $friend_name;
 
-    // Verificar si el usuario actual YA TIENE la playlist fusionada
+    // 3. Verificar si el usuario actual YA TIENE la playlist fusionada
     $stmt = $pdo->prepare("SELECT id_playlist FROM playlists WHERE id_usuario = ? AND nombre = ?");
     $stmt->execute([$user_id, $nombre_playlist]);
     if ($stmt->fetchColumn()) {
-        sendJson(['success' => false, 'message' => 'Ya tienes esta playlist fusionada en tu biblioteca.']);
+        sendJson(['success' => false, 'message' => "Ya tienes una playlist fusionada con {$friend_name}"]);
     }
 
-    // Verificar si el AMIGO ya tiene la playlist fusionada
+    // ============================================================
+    // 🔥 NUEVO: CONTAR CANCIONES DE AMBOS
+    // ============================================================
+
+    $stmt = $pdo->prepare("
+        SELECT COUNT(DISTINCT c.id_cancion) as total
+        FROM canciones c
+        LEFT JOIN albumes a ON c.id_album = a.id_album
+        WHERE c.es_sistema = 1 OR c.id_usuario_subio = ? OR a.id_usuario = ?
+    ");
+    $stmt->execute([$user_id, $user_id]);
+    $mis_total = (int)$stmt->fetchColumn();
+
+    $stmt->execute([$friend_id, $friend_id]);
+    $amigo_total = (int)$stmt->fetchColumn();
+
+    // ============================================================
+    // 🔥 CASO 1: AMBOS SON NUEVOS → NO PERMITIR
+    // ============================================================
+
+    if ($mis_total === 0 && $amigo_total === 0) {
+        sendJson([
+            'success' => false,
+            'message' => 'Ambos son nuevos en Audiophille\'s. Para fusionar playlists necesitan escuchar y calificar canciones primero. ¡Explora la biblioteca y vuelve a intentarlo!',
+            'code' => 'NO_DATA'
+        ]);
+        return;
+    }
+
+    // ============================================================
+    // 🔥 CASO 2: UNO ES NUEVO → PERMITIR CON ADVERTENCIA
+    // ============================================================
+
+    $warning = false;
+    if ($mis_total === 0 || $amigo_total === 0) {
+        $warning = true;
+    }
+
+    // ============================================================
+    // OBTENER CANCIONES DE AMBOS (incluyendo del sistema)
+    // ============================================================
+
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT c.id_cancion, c.titulo, c.genero, 
+               COALESCE(ar.nombre_artista, 'Artista') as artista,
+               c.es_sistema
+        FROM canciones c
+        LEFT JOIN albumes a ON c.id_album = a.id_album
+        LEFT JOIN artistas ar ON a.id_artista = ar.id_artista
+        WHERE c.es_sistema = 1 OR c.id_usuario_subio = ? OR a.id_usuario = ?
+    ");
+    $stmt->execute([$user_id, $user_id]);
+    $mis_canciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $stmt->execute([$friend_id, $friend_id]);
+    $amigo_canciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // ============================================================
+    // COMBINAR CANCIONES (evitar duplicados)
+    // ============================================================
+
+    $todas_las_canciones = [];
+    $ids_vistos = [];
+
+    foreach ($mis_canciones as $c) {
+        if (!in_array($c['id_cancion'], $ids_vistos)) {
+            $todas_las_canciones[] = $c;
+            $ids_vistos[] = $c['id_cancion'];
+        }
+    }
+
+    foreach ($amigo_canciones as $c) {
+        if (!in_array($c['id_cancion'], $ids_vistos)) {
+            $todas_las_canciones[] = $c;
+            $ids_vistos[] = $c['id_cancion'];
+        }
+    }
+
+    $total_canciones_disponibles = count($todas_las_canciones);
+    $total_seleccionadas = [];
+
+    // ============================================================
+    // 🔥 ALGORITMO DE SELECCIÓN
+    // ============================================================
+
+    // Si hay menos de 30 canciones, tomar TODAS las que haya
+    if ($total_canciones_disponibles <= 30) {
+        $total_seleccionadas = array_column($todas_las_canciones, 'id_cancion');
+
+        // Si hay menos de 5, buscar más del sistema
+        if ($total_canciones_disponibles < 5 && !empty($total_seleccionadas)) {
+            $placeholders = implode(',', array_fill(0, count($total_seleccionadas), '?'));
+            $stmt = $pdo->prepare("
+                SELECT id_cancion 
+                FROM canciones 
+                WHERE es_sistema = 1 
+                AND id_cancion NOT IN ($placeholders)
+                LIMIT ?
+            ");
+            $params = array_merge($total_seleccionadas, [5 - $total_canciones_disponibles]);
+            $stmt->execute($params);
+            $adicionales = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $total_seleccionadas = array_merge($total_seleccionadas, $adicionales);
+        }
+    } else {
+        // Hay más de 30 canciones → APLICAR ALGORITMO COMPLETO
+
+        // 1. Canciones en común (40%)
+        $mis_ids = array_column($mis_canciones, 'id_cancion');
+        $amigo_ids = array_column($amigo_canciones, 'id_cancion');
+        $comunes = array_intersect($mis_ids, $amigo_ids);
+
+        if (!empty($comunes)) {
+            $comunes_list = array_values($comunes);
+            shuffle($comunes_list);
+            $limite_comunes = min(count($comunes_list), ceil(30 * 0.4));
+            for ($i = 0; $i < $limite_comunes; $i++) {
+                $total_seleccionadas[] = $comunes_list[$i];
+            }
+        }
+
+        // 2. Género más escuchado (30%)
+        $generos = array_merge(
+            array_column($mis_canciones, 'genero'),
+            array_column($amigo_canciones, 'genero')
+        );
+        $generos = array_filter($generos);
+
+        if (!empty($generos)) {
+            $genero_count = array_count_values($generos);
+            arsort($genero_count);
+            $genero_top = key($genero_count);
+
+            $candidatas = [];
+            foreach ($todas_las_canciones as $c) {
+                if ($c['genero'] === $genero_top && !in_array($c['id_cancion'], $total_seleccionadas)) {
+                    $candidatas[] = $c['id_cancion'];
+                }
+            }
+            shuffle($candidatas);
+            $limite_genero = min(count($candidatas), ceil(30 * 0.3));
+            for ($i = 0; $i < $limite_genero; $i++) {
+                $total_seleccionadas[] = $candidatas[$i];
+            }
+        }
+
+        // 3. Mejor calificadas (20%)
+        $ids_restantes = array_diff(
+            array_column($todas_las_canciones, 'id_cancion'),
+            $total_seleccionadas
+        );
+
+        $canciones_con_rating = [];
+        foreach ($ids_restantes as $id) {
+            $stmt = $pdo->prepare("SELECT AVG(puntuacion) as rating FROM resenas WHERE id_cancion = ?");
+            $stmt->execute([$id]);
+            $rating = $stmt->fetchColumn();
+            if ($rating && $rating >= 4) {
+                $canciones_con_rating[] = ['id' => $id, 'rating' => $rating];
+            }
+        }
+
+        usort($canciones_con_rating, function ($a, $b) {
+            return $b['rating'] <=> $a['rating'];
+        });
+
+        $limite_rating = min(count($canciones_con_rating), ceil(30 * 0.2));
+        for ($i = 0; $i < $limite_rating; $i++) {
+            $total_seleccionadas[] = $canciones_con_rating[$i]['id'];
+        }
+
+        // 4. Aleatorias (10%)
+        $ids_restantes = array_diff(
+            array_column($todas_las_canciones, 'id_cancion'),
+            $total_seleccionadas
+        );
+        shuffle($ids_restantes);
+        $limite_aleatorio = min(count($ids_restantes), ceil(30 * 0.1));
+        for ($i = 0; $i < $limite_aleatorio; $i++) {
+            $total_seleccionadas[] = $ids_restantes[$i];
+        }
+
+        // 5. Si aún faltan, rellenar
+        if (count($total_seleccionadas) < 5) {
+            $faltantes = array_diff(
+                array_column($todas_las_canciones, 'id_cancion'),
+                $total_seleccionadas
+            );
+            shuffle($faltantes);
+            $total_seleccionadas = array_merge(
+                $total_seleccionadas,
+                array_slice($faltantes, 0, 5 - count($total_seleccionadas))
+            );
+        }
+
+        // 6. Limitar a 30 canciones
+        if (count($total_seleccionadas) > 30) {
+            $total_seleccionadas = array_slice($total_seleccionadas, 0, 30);
+        }
+    }
+
+    // ============================================================
+    // VERIFICAR SI EL AMIGO YA TIENE LA PLAYLIST
+    // ============================================================
+
     $stmt = $pdo->prepare("SELECT id_playlist, portada_url FROM playlists WHERE id_usuario = ? AND nombre = ?");
     $stmt->execute([$friend_id, $nombre_playlist]);
     $friend_playlist = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Si el amigo ya la tiene, copiamos su playlist al usuario actual
     if ($friend_playlist) {
         // Copiar la playlist del amigo
         $stmt = $pdo->prepare("INSERT INTO playlists (nombre, id_usuario, portada_url) VALUES (?, ?, ?)");
         $stmt->execute([$nombre_playlist, $user_id, $friend_playlist['portada_url']]);
         $nuevo_id_user = $pdo->lastInsertId();
 
-        // Copiar canciones de la playlist del amigo
         $stmt = $pdo->prepare("SELECT id_cancion, orden FROM playlist_canciones WHERE id_playlist = ? ORDER BY orden");
         $stmt->execute([$friend_playlist['id_playlist']]);
         $canciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         foreach ($canciones as $c) {
             $stmt = $pdo->prepare("INSERT INTO playlist_canciones (id_playlist, id_cancion, orden) VALUES (?, ?, ?)");
             $stmt->execute([$nuevo_id_user, $c['id_cancion'], $c['orden']]);
@@ -1211,128 +1409,28 @@ function mergePlaylists($pdo, $user_id, $data)
             'id_playlist' => $nuevo_id_user,
             'nombre' => $nombre_playlist,
             'total_canciones' => count($canciones),
-            'copied_from_friend' => true // Indicador para el frontend
+            'warning' => $warning,
+            'copied_from_friend' => true
         ]);
         return;
     }
 
     // ============================================================
-    // NINGUNO TIENE LA PLAYLIST → CREAR NUEVA PARA AMBOS
+    // CREAR PLAYLIST PARA AMBOS USUARIOS
     // ============================================================
 
-    // Obtener canciones del usuario
-    $stmt = $pdo->prepare("
-        SELECT DISTINCT c.id_cancion, c.titulo, c.genero, COALESCE(ar.nombre_artista, '') as artista
-        FROM canciones c
-        LEFT JOIN albumes a ON c.id_album = a.id_album
-        LEFT JOIN artistas ar ON a.id_artista = ar.id_artista
-        WHERE c.es_sistema = 1 OR c.id_usuario_subio = ? OR a.id_usuario = ?
-    ");
-    $stmt->execute([$user_id, $user_id]);
-    $mis_canciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Obtener canciones del amigo
-    $stmt = $pdo->prepare("
-        SELECT DISTINCT c.id_cancion, c.titulo, c.genero, COALESCE(ar.nombre_artista, '') as artista
-        FROM canciones c
-        LEFT JOIN albumes a ON c.id_album = a.id_album
-        LEFT JOIN artistas ar ON a.id_artista = ar.id_artista
-        WHERE c.es_sistema = 1 OR c.id_usuario_subio = ? OR a.id_usuario = ?
-    ");
-    $stmt->execute([$friend_id, $friend_id]);
-    $amigo_canciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $mis_ids = array_column($mis_canciones, 'id_cancion');
-    $amigo_ids = array_column($amigo_canciones, 'id_cancion');
-    $comunes = array_intersect($mis_ids, $amigo_ids);
-
-    // Crear playlist fusionada para ambos usuarios
     $portada = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400';
 
-    // Insertar en el usuario actual
     $stmt = $pdo->prepare("INSERT INTO playlists (nombre, id_usuario, portada_url) VALUES (?, ?, ?)");
     $stmt->execute([$nombre_playlist, $user_id, $portada]);
     $nuevo_id_user = $pdo->lastInsertId();
 
-    // Insertar en el amigo
     $stmt = $pdo->prepare("INSERT INTO playlists (nombre, id_usuario, portada_url) VALUES (?, ?, ?)");
     $stmt->execute([$nombre_playlist, $friend_id, $portada]);
     $nuevo_id_friend = $pdo->lastInsertId();
 
-    // Seleccionar canciones según algoritmo
-    $total_canciones_seleccionadas = [];
-    $idx = 0;
-
-    // 1. 40% canciones en común
-    $comunes_list = array_values($comunes);
-    shuffle($comunes_list);
-    $limite_comunes = min(count($comunes_list), ceil(30 * 0.4));
-    for ($i = 0; $i < $limite_comunes; $i++) {
-        $total_canciones_seleccionadas[] = $comunes_list[$i];
-    }
-
-    // 2. 30% del género más escuchado
-    $generos = array_merge(
-        array_column($mis_canciones, 'genero'),
-        array_column($amigo_canciones, 'genero')
-    );
-    $generos = array_filter($generos);
-    $genero_top = '';
-    if (!empty($generos)) {
-        $genero_count = array_count_values($generos);
-        arsort($genero_count);
-        $genero_top = key($genero_count);
-        $candidatas = [];
-        foreach ($mis_canciones as $c) {
-            if ($c['genero'] === $genero_top && !in_array($c['id_cancion'], $total_canciones_seleccionadas)) {
-                $candidatas[] = $c['id_cancion'];
-            }
-        }
-        shuffle($candidatas);
-        $limite_genero = min(count($candidatas), ceil(30 * 0.3));
-        for ($i = 0; $i < $limite_genero; $i++) {
-            $total_canciones_seleccionadas[] = $candidatas[$i];
-        }
-    }
-
-    // 3. 20% mejor calificadas
-    $canciones_candidatas = array_merge($mis_ids, $amigo_ids);
-    $canciones_candidatas = array_unique($canciones_candidatas);
-    $canciones_candidatas = array_diff($canciones_candidatas, $total_canciones_seleccionadas);
-    $canciones_con_rating = [];
-    foreach ($canciones_candidatas as $id) {
-        $stmt = $pdo->prepare("SELECT AVG(puntuacion) as rating FROM resenas WHERE id_cancion = ?");
-        $stmt->execute([$id]);
-        $rating = $stmt->fetchColumn();
-        if ($rating && $rating >= 4) {
-            $canciones_con_rating[] = ['id' => $id, 'rating' => $rating];
-        }
-    }
-    usort($canciones_con_rating, function ($a, $b) {
-        return $b['rating'] <=> $a['rating'];
-    });
-    $limite_rating = min(count($canciones_con_rating), ceil(30 * 0.2));
-    for ($i = 0; $i < $limite_rating; $i++) {
-        $total_canciones_seleccionadas[] = $canciones_con_rating[$i]['id'];
-    }
-
-    // 4. 10% aleatorias
-    $restantes = array_diff($canciones_candidatas, $total_canciones_seleccionadas);
-    shuffle($restantes);
-    $limite_aleatorio = min(count($restantes), ceil(30 * 0.1));
-    for ($i = 0; $i < $limite_aleatorio; $i++) {
-        $total_canciones_seleccionadas[] = $restantes[$i];
-    }
-
-    // Si no hay suficientes canciones, rellenar
-    if (count($total_canciones_seleccionadas) < 5) {
-        $faltantes = array_diff($canciones_candidatas, $total_canciones_seleccionadas);
-        shuffle($faltantes);
-        $total_canciones_seleccionadas = array_merge($total_canciones_seleccionadas, array_slice($faltantes, 0, 5 - count($total_canciones_seleccionadas)));
-    }
-
     // Insertar canciones en ambas playlists
-    foreach ($total_canciones_seleccionadas as $idx => $id_cancion) {
+    foreach ($total_seleccionadas as $idx => $id_cancion) {
         $stmt = $pdo->prepare("INSERT INTO playlist_canciones (id_playlist, id_cancion, orden) VALUES (?, ?, ?)");
         $stmt->execute([$nuevo_id_user, $id_cancion, $idx]);
         $stmt->execute([$nuevo_id_friend, $id_cancion, $idx]);
@@ -1346,7 +1444,8 @@ function mergePlaylists($pdo, $user_id, $data)
         'success' => true,
         'id_playlist' => $nuevo_id_user,
         'nombre' => $nombre_playlist,
-        'total_canciones' => count($total_canciones_seleccionadas),
+        'total_canciones' => count($total_seleccionadas),
+        'warning' => $warning,
         'copied_from_friend' => false
     ]);
 }
@@ -1396,8 +1495,31 @@ function obtenerNombreUsuario($pdo, $user_id)
 
 function registrarActividad($pdo, $user_id, $tipo, $id_referencia, $descripcion)
 {
-    $stmt = $pdo->prepare("INSERT INTO actividad_social (id_usuario, tipo_actividad, id_referencia, descripcion) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$user_id, $tipo, $id_referencia, $descripcion]);
+    try {
+        $stmt = $pdo->prepare("INSERT INTO actividad_social (id_usuario, tipo_actividad, id_referencia, descripcion) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$user_id, $tipo, $id_referencia, $descripcion]);
+    } catch (PDOException $e) {
+        // Si la tabla no existe, crearla
+        if (strpos($e->getMessage(), 'Table') !== false) {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS actividad_social (
+                    id_actividad INT PRIMARY KEY AUTO_INCREMENT,
+                    id_usuario INT NOT NULL,
+                    tipo_actividad VARCHAR(50) NOT NULL,
+                    id_referencia INT,
+                    descripcion TEXT,
+                    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+                    INDEX idx_usuario (id_usuario),
+                    INDEX idx_tipo (tipo_actividad),
+                    INDEX idx_fecha (fecha)
+                )
+            ");
+            // Reintentar
+            $stmt = $pdo->prepare("INSERT INTO actividad_social (id_usuario, tipo_actividad, id_referencia, descripcion) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$user_id, $tipo, $id_referencia, $descripcion]);
+        }
+    }
 }
 
 function checkMergedPlaylist($pdo, $user_id, $data)
@@ -1407,7 +1529,6 @@ function checkMergedPlaylist($pdo, $user_id, $data)
         sendJson(['success' => false, 'message' => 'ID de amigo requerido']);
     }
 
-    // Obtener nombres
     $stmt = $pdo->prepare("SELECT nombre_usuario FROM usuarios WHERE id_usuario = ?");
     $stmt->execute([$user_id]);
     $mi_nombre = $stmt->fetchColumn();

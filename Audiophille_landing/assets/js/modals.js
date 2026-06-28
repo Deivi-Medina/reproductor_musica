@@ -26,10 +26,10 @@ function injectModalStyles() {
       opacity: 1;
     }
     .custom-modal-container {
-      background: rgba(20, 20, 28, 0.95);
+      background: rgba(16, 12, 26, 0.95);
       backdrop-filter: blur(20px);
       border-radius: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(157, 78, 221, 0.15);
       box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5);
       width: 90%;
       max-width: 420px;
@@ -42,18 +42,19 @@ function injectModalStyles() {
     }
     .custom-modal-title {
       font-size: 1.5rem;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 12px;
-      color: #fff;
+      color: #f0edf5;
+      letter-spacing: -0.5px;
     }
     .custom-modal-message {
       font-size: 1rem;
-      color: #c0c0c8;
+      color: #9a8aa8;
       margin-bottom: 24px;
-      line-height: 1.5;
+      line-height: 1.6;
     }
     .custom-modal-message strong {
-      color: #ffffff;
+      color: #f0edf5;
       font-weight: 700;
     }
     .custom-modal-message br {
@@ -69,19 +70,27 @@ function injectModalStyles() {
     .custom-modal-btn {
       padding: 8px 20px;
       border-radius: 40px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       border: none;
       background: rgba(255, 255, 255, 0.05);
-      color: #fff;
+      color: #f0edf5;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .custom-modal-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-2px);
     }
     .custom-modal-btn.confirm {
-      background: #007aff;
+      background: #9d4edd;
       color: white;
+      box-shadow: 0 4px 20px rgba(157, 78, 221, 0.25);
     }
     .custom-modal-btn.confirm:hover {
-      background: #005fc1;
+      background: #b5179e;
+      box-shadow: 0 8px 30px rgba(157, 78, 221, 0.35);
+      transform: translateY(-2px);
     }
     .custom-modal-btn.cancel:hover {
       background: rgba(255, 255, 255, 0.15);
@@ -92,19 +101,73 @@ function injectModalStyles() {
     .custom-modal-btn.danger:hover {
       background: #cc2f25;
     }
+    .custom-modal-btn:active {
+      transform: scale(0.96);
+    }
     input.custom-modal-input {
       width: 100%;
-      background: rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
-      padding: 12px;
-      color: white;
+      padding: 12px 16px;
+      color: #f0edf5;
       margin-bottom: 20px;
       font-size: 0.95rem;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      transition: border-color 0.2s;
     }
     input.custom-modal-input:focus {
       outline: none;
-      border-color: #007aff;
+      border-color: #9d4edd;
+      box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.08);
+    }
+    input.custom-modal-input::placeholder {
+      color: #6a5a78;
+    }
+    .custom-modal-icon {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .custom-modal-icon .icon-wrapper {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .custom-modal-icon .icon-wrapper.success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 2px solid #10b981;
+    }
+    .custom-modal-icon .icon-wrapper.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 2px solid #ef4444;
+    }
+    .custom-modal-icon .icon-wrapper.warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 2px solid #f59e0b;
+    }
+    .custom-modal-icon .icon-wrapper.info {
+      background: rgba(157, 78, 221, 0.1);
+      border: 2px solid #9d4edd;
+    }
+    .custom-modal-icon svg {
+      width: 32px;
+      height: 32px;
+    }
+    .custom-modal-icon .success svg {
+      color: #10b981;
+    }
+    .custom-modal-icon .error svg {
+      color: #ef4444;
+    }
+    .custom-modal-icon .warning svg {
+      color: #f59e0b;
+    }
+    .custom-modal-icon .info svg {
+      color: #9d4edd;
     }
   `;
   document.head.appendChild(style);
@@ -117,6 +180,7 @@ function createModalElements() {
   overlay.className = "custom-modal-overlay";
   overlay.innerHTML = `
     <div class="custom-modal-container">
+      <div id="customModalIcon"></div>
       <div class="custom-modal-title" id="customModalTitle">Confirmar</div>
       <div class="custom-modal-message" id="customModalMessage"></div>
       <div id="customModalDynamicContent"></div>
@@ -142,7 +206,11 @@ function closeModal() {
   }
 }
 
-export function showAlert(message, title = "Aviso") {
+// ============================================================
+// FUNCIONES DE MODALES
+// ============================================================
+
+export function showAlert(message, title = "Aviso", type = "info") {
   return new Promise((resolve) => {
     createModalElements();
     const overlay = document.getElementById("custom-modal-root");
@@ -150,10 +218,37 @@ export function showAlert(message, title = "Aviso") {
     const msgEl = document.getElementById("customModalMessage");
     const buttonsDiv = document.getElementById("customModalButtons");
     const dynamicDiv = document.getElementById("customModalDynamicContent");
+    const iconDiv = document.getElementById("customModalIcon");
 
     dynamicDiv.innerHTML = "";
+    iconDiv.innerHTML = "";
     titleEl.innerText = title;
     msgEl.innerHTML = message;
+
+    // Icono según tipo
+    if (type) {
+      const iconMap = {
+        success: "✅",
+        error: "❌",
+        warning: "⚠️",
+        info: "ℹ️",
+      };
+      const colors = {
+        success: "success",
+        error: "error",
+        warning: "warning",
+        info: "info",
+      };
+      const icon = iconMap[type] || "ℹ️";
+      const color = colors[type] || "info";
+      iconDiv.innerHTML = `
+        <div class="custom-modal-icon">
+          <div class="icon-wrapper ${color}">
+            <span style="font-size: 28px; line-height: 1;">${icon}</span>
+          </div>
+        </div>
+      `;
+    }
 
     buttonsDiv.innerHTML = `<button class="custom-modal-btn confirm" id="customAlertOk">Aceptar</button>`;
 
@@ -177,8 +272,10 @@ export function showConfirm(message, title = "Confirmar", confirmText = "Sí", c
     const msgEl = document.getElementById("customModalMessage");
     const buttonsDiv = document.getElementById("customModalButtons");
     const dynamicDiv = document.getElementById("customModalDynamicContent");
+    const iconDiv = document.getElementById("customModalIcon");
 
     dynamicDiv.innerHTML = "";
+    iconDiv.innerHTML = "";
     titleEl.innerText = title;
     msgEl.innerHTML = message;
 
@@ -221,10 +318,12 @@ export function showPrompt(message, defaultValue = "", title = "Ingrese un valor
     const msgEl = document.getElementById("customModalMessage");
     const buttonsDiv = document.getElementById("customModalButtons");
     const dynamicDiv = document.getElementById("customModalDynamicContent");
+    const iconDiv = document.getElementById("customModalIcon");
 
     dynamicDiv.innerHTML = `<input type="text" id="customPromptInput" class="custom-modal-input" value="${defaultValue.replace(/"/g, "&quot;")}" placeholder="${message}">`;
+    iconDiv.innerHTML = "";
     titleEl.innerText = title;
-    msgEl.innerHTML = message;
+    msgEl.innerHTML = "";
 
     buttonsDiv.innerHTML = `
       <button class="custom-modal-btn cancel" id="customPromptCancel">Cancelar</button>
@@ -254,9 +353,16 @@ export function showPrompt(message, defaultValue = "", title = "Ingrese un valor
     cancelBtn.addEventListener("click", cancelHandler);
 
     overlay.classList.add("active");
-    if (input) input.focus();
+    if (input) {
+      input.focus();
+      input.select();
+    }
   });
 }
+
+// ============================================================
+// EXPOSER AL GLOBAL (para usar desde HTML con onclick)
+// ============================================================
 
 window.showAlert = showAlert;
 window.showConfirm = showConfirm;
