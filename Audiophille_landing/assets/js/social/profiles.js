@@ -59,11 +59,60 @@ export async function openPublicProfile(userId) {
 }
 
 function renderPublicProfile(container, data) {
-  const { user, stats, playlists, reviews, is_following, are_friends } = data;
+  const { user, stats, playlists, reviews, is_following, are_friends, level, achievements } = data;
 
   const avatarUrl = user.avatar
     ? `${window.baseUrl}${user.avatar}?v=${Date.now()}`
     : `https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${encodeURIComponent(user.nombre_usuario)}`;
+
+  let levelHtml = "";
+  if (level) {
+    const progress = level.id >= 6 ? 100 : 0;
+    levelHtml = `
+      <div class="profile-section">
+        <h3 class="profile-section-title">Nivel y Logros</h3>
+        <div class="level-display">
+          <div class="level-icon">${level.icono}</div>
+          <div class="level-info">
+            <div class="level-name">Nivel ${level.id}: ${level.nombre}</div>
+            <div class="level-xp">${level.xp_total} XP</div>
+          </div>
+          <div class="level-progress-container">
+            <div class="level-progress-bar">
+              <div class="level-progress-fill" style="width: ${progress}%"></div>
+            </div>
+            <div class="level-progress-text">${level.id >= 6 ? "Nivel máximo" : `${level.xp_total} XP`}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  let achievementsHtml = "";
+  if (achievements && achievements.length > 0) {
+    const unlockedCount = achievements.filter((a) => a.desbloqueado !== null).length;
+    achievementsHtml = `
+      <div class="profile-section">
+        <h3 class="profile-section-title">Logros (${unlockedCount}/${achievements.length})</h3>
+        <div class="achievements-grid">
+          ${achievements
+            .map((ach) => {
+              const isUnlocked = ach.desbloqueado !== null;
+              return `
+              <div class="achievement-card ${isUnlocked ? "unlocked" : "locked"}">
+                <div class="achievement-card-icon">${ach.icono}</div>
+                <div class="achievement-card-name">${ach.nombre}</div>
+                <div class="achievement-card-desc">${ach.descripcion || ""}</div>
+                <div class="achievement-card-rareza ${ach.rareza}">${ach.rareza}</div>
+                <div class="achievement-card-status">${isUnlocked ? "✅ Desbloqueado" : "🔒 Bloqueado"}</div>
+              </div>
+            `;
+            })
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
 
   container.innerHTML = `
     <div class="public-profile-container">
@@ -96,6 +145,9 @@ function renderPublicProfile(container, data) {
           ${!are_friends ? '<p class="profile-friend-hint">💡 Deben ser amigos para fusionar playlists</p>' : ""}
         </div>
       </div>
+
+      ${levelHtml}
+      ${achievementsHtml}
 
       <div class="profile-section">
         <h3 class="profile-section-title"><i data-lucide="music"></i> Playlists públicas</h3>

@@ -48,6 +48,8 @@ const DOM = {
     artist: document.getElementById("currentArtist"),
     cover: document.getElementById("currentCover"),
     btnFavorite: document.getElementById("btnMainFavorite"),
+    volSlider: document.getElementById("volSlider"),
+    lblMasterVol: document.getElementById("lblMasterVol"),
   },
   audioControls: {
     scrubber: document.getElementById("timelineScrubber"),

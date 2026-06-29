@@ -1,6 +1,8 @@
 // js/reviews.js
 import { showAlert, showConfirm } from "./modals.js";
 import { getReviews, saveReview, deleteReview, updateReview, getTopArtist } from "./services/reviewService.js";
+import { setLoading } from "./helpers/loading.js";
+import { addXpForAction } from "./achievements.js";
 
 let reviews = [];
 let currentRating = 5;
@@ -45,6 +47,7 @@ export async function loadReviewsFromAPI() {
 async function saveReviewToAPI(trackTitle, artistName, albumCover, rating, text, rewatch, id_cancion) {
   try {
     const data = await saveReview(id_cancion, rating, text, rewatch, trackTitle, artistName);
+    addXpForAction("review");
     if (data.success) {
       await loadReviewsFromAPI();
       window.reviews = reviews;
@@ -381,10 +384,16 @@ export function renderIntegratedDiaryFeed() {
         `;
     item.querySelector(".btn-delete-integrated-review")?.addEventListener("click", async (e) => {
       e.stopPropagation();
-      if (await showConfirm("¿Eliminar esta reseña?", "Eliminar", "Eliminar", "Cancelar", true)) {
-        await deleteReviewFromAPI(rev.id_review);
-        renderIntegratedDiaryFeed();
-        if (getPlayingTrackGlobal) renderReviews(getPlayingTrackGlobal());
+      const btn = e.currentTarget;
+      setLoading(btn, true, "Eliminando...");
+      try {
+        if (await showConfirm("¿Eliminar esta reseña?", "Eliminar", "Eliminar", "Cancelar", true)) {
+          await deleteReviewFromAPI(rev.id_review);
+          renderIntegratedDiaryFeed();
+          if (getPlayingTrackGlobal) renderReviews(getPlayingTrackGlobal());
+        }
+      } finally {
+        setLoading(btn, false);
       }
     });
     item.querySelector(".btn-edit-integrated-review")?.addEventListener("click", (e) => {
@@ -459,10 +468,16 @@ export function renderReviews(playingTrack) {
         `;
     item.querySelector(".btn-delete-review")?.addEventListener("click", async (e) => {
       e.stopPropagation();
-      if (await showConfirm("¿Eliminar esta reseña?", "Eliminar", "Eliminar", "Cancelar", true)) {
-        await deleteReviewFromAPI(rev.id_review);
-        renderReviews(playingTrack);
-        renderIntegratedDiaryFeed();
+      const btn = e.currentTarget;
+      setLoading(btn, true, "Eliminando...");
+      try {
+        if (await showConfirm("¿Eliminar esta reseña?", "Eliminar", "Eliminar", "Cancelar", true)) {
+          await deleteReviewFromAPI(rev.id_review);
+          renderReviews(playingTrack);
+          renderIntegratedDiaryFeed();
+        }
+      } finally {
+        setLoading(btn, false);
       }
     });
     item.querySelector(".btn-edit-review")?.addEventListener("click", (e) => {
@@ -535,17 +550,31 @@ export async function initReviewsSystem(getPlayingTrackFn, getAllTracksInLibrary
   }
   if (btnSaveReview && reviewTextInput) {
     btnSaveReview.addEventListener("click", async () => {
-      const text = reviewTextInput.value.trim();
-      const track = getPlayingTrackGlobal();
-      if (!track) return showAlert("Debes reproducir una canción.", "Sin reproducción");
-      if (!text) return showAlert("Escribe tu reseña.", "Texto vacío");
-      if (!track.id_cancion) return showAlert("Canción sin identificador.", "Error");
-      await saveReviewToAPI(track.trackTitle, track.artistName, track.albumCover, currentRating, text, false, track.id_cancion);
-      reviewTextInput.value = "";
-      currentRating = 5;
-      highlightStars(5);
-      renderReviews(getPlayingTrackGlobal());
-      renderIntegratedDiaryFeed();
+      setLoading(btnSaveReview, true, "Guardando...");
+      try {
+        const text = reviewTextInput.value.trim();
+        const track = getPlayingTrackGlobal();
+        if (!track) {
+          setLoading(btnSaveReview, false);
+          return showAlert("Debes reproducir una canción.", "Sin reproducción");
+        }
+        if (!text) {
+          setLoading(btnSaveReview, false);
+          return showAlert("Escribe tu reseña.", "Texto vacío");
+        }
+        if (!track.id_cancion) {
+          setLoading(btnSaveReview, false);
+          return showAlert("Canción sin identificador.", "Error");
+        }
+        await saveReviewToAPI(track.trackTitle, track.artistName, track.albumCover, currentRating, text, false, track.id_cancion);
+        reviewTextInput.value = "";
+        currentRating = 5;
+        highlightStars(5);
+        renderReviews(getPlayingTrackGlobal());
+        renderIntegratedDiaryFeed();
+      } finally {
+        setLoading(btnSaveReview, false);
+      }
     });
   }
   highlightStars(5);
@@ -589,31 +618,46 @@ export async function initReviewsSystem(getPlayingTrackFn, getAllTracksInLibrary
   }
   if (btnSaveIntegratedReview && integratedReviewText) {
     btnSaveIntegratedReview.addEventListener("click", async () => {
-      const selectEl = document.getElementById("diarySongSelector");
-      if (!selectEl || !selectEl.value) return showAlert("Selecciona una canción.", "Canción no seleccionada");
-      const text = integratedReviewText.value.trim();
-      if (!text) return showAlert("Escribe tu reseña.", "Comentario vacío");
-      let trackData;
+      setLoading(btnSaveIntegratedReview, true, "Guardando...");
       try {
-        trackData = JSON.parse(selectEl.value);
-      } catch {
-        return showAlert("Error al leer datos.", "Error");
+        const selectEl = document.getElementById("diarySongSelector");
+        if (!selectEl || !selectEl.value) {
+          setLoading(btnSaveIntegratedReview, false);
+          return showAlert("Selecciona una canción.", "Canción no seleccionada");
+        }
+        const text = integratedReviewText.value.trim();
+        if (!text) {
+          setLoading(btnSaveIntegratedReview, false);
+          return showAlert("Escribe tu reseña.", "Comentario vacío");
+        }
+        let trackData;
+        try {
+          trackData = JSON.parse(selectEl.value);
+        } catch {
+          setLoading(btnSaveIntegratedReview, false);
+          return showAlert("Error al leer datos.", "Error");
+        }
+        if (!trackData.id_cancion) {
+          setLoading(btnSaveIntegratedReview, false);
+          return showAlert("Canción sin identificador.", "Error");
+        }
+        await saveReviewToAPI(
+          trackData.trackTitle,
+          trackData.artistName,
+          trackData.albumCover,
+          currentIntegratedRating,
+          text,
+          isIntegratedRewatchActive,
+          trackData.id_cancion,
+        );
+        integratedReviewText.value = "";
+        currentIntegratedRating = 5;
+        highlightIntegratedStars(5);
+        renderReviews(getPlayingTrackGlobal());
+        renderIntegratedDiaryFeed();
+      } finally {
+        setLoading(btnSaveIntegratedReview, false);
       }
-      if (!trackData.id_cancion) return showAlert("Canción sin identificador.", "Error");
-      await saveReviewToAPI(
-        trackData.trackTitle,
-        trackData.artistName,
-        trackData.albumCover,
-        currentIntegratedRating,
-        text,
-        isIntegratedRewatchActive,
-        trackData.id_cancion,
-      );
-      integratedReviewText.value = "";
-      currentIntegratedRating = 5;
-      highlightIntegratedStars(5);
-      renderReviews(getPlayingTrackGlobal());
-      renderIntegratedDiaryFeed();
     });
   }
   if (diarySearchFilter)
@@ -668,14 +712,22 @@ export async function initReviewsSystem(getPlayingTrackFn, getAllTracksInLibrary
   }
   if (btnEditReviewConfirm) {
     btnEditReviewConfirm.addEventListener("click", async () => {
-      const textEl = document.getElementById("editReviewTextarea");
-      const text = textEl ? textEl.value.trim() : "";
-      if (!text) return showAlert("Escribe tu reseña.", "Crítica vacía");
-      if (editingReviewId) {
-        await updateReviewInAPI(editingReviewId, currentEditingRating, text, isEditingRewatchActive);
-        editReviewModal?.classList.add("hidden");
-        renderReviews(getPlayingTrackGlobal());
-        renderIntegratedDiaryFeed();
+      setLoading(btnEditReviewConfirm, true, "Guardando...");
+      try {
+        const textEl = document.getElementById("editReviewTextarea");
+        const text = textEl ? textEl.value.trim() : "";
+        if (!text) {
+          setLoading(btnEditReviewConfirm, false);
+          return showAlert("Escribe tu reseña.", "Crítica vacía");
+        }
+        if (editingReviewId) {
+          await updateReviewInAPI(editingReviewId, currentEditingRating, text, isEditingRewatchActive);
+          editReviewModal?.classList.add("hidden");
+          renderReviews(getPlayingTrackGlobal());
+          renderIntegratedDiaryFeed();
+        }
+      } finally {
+        setLoading(btnEditReviewConfirm, false);
       }
     });
   }

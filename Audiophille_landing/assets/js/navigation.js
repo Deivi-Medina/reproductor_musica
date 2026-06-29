@@ -21,6 +21,7 @@ export function showSection(section) {
     DOM.views.community,
     DOM.views.artistProfile,
     DOM.views.publicProfile,
+    document.getElementById("settingsView"),
   ];
   allViews.forEach((view) => {
     if (view) view.classList.add("hidden");
@@ -81,6 +82,11 @@ export function showSection(section) {
           setTimeout(setupFeedInfiniteScroll, 300);
         }
       }, 100);
+    }
+  } else if (section === "settings") {
+    const settingsView = document.getElementById("settingsView");
+    if (settingsView) {
+      settingsView.classList.remove("hidden");
     }
   } else if (section.startsWith("profile:")) {
     // Perfil público manejado por profiles.js

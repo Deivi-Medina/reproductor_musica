@@ -5,6 +5,7 @@ import { renderAlbumCards, refreshUI as refreshUIFromUi } from "./ui.js";
 import { setQueue, playActiveSong } from "./audio.js";
 import { showAlert, showConfirm } from "./modals.js";
 import { createPlaylist, updatePlaylist, deletePlaylist } from "./services/playlistService.js";
+import { addXpForAction } from "./achievements.js";
 
 window.tempCoverFile = null;
 
@@ -71,6 +72,7 @@ export async function createPlaylistAction() {
     if (data.success) {
       await refreshUI();
       closePlaylistModal();
+      addXpForAction("playlist");
     } else {
       await showAlert(data.message || "Error al crear la playlist", "Error");
     }

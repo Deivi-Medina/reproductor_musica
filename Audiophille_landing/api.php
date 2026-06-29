@@ -154,7 +154,17 @@ switch ($action) {
     case 'check_merged_playlist':
         checkMergedPlaylist($pdo, $user_id, $_GET);
         break;
+    case 'get_achievements':
+        getAchievements($pdo, $user_id);
+        break;
 
+    case 'update_xp':
+        updateXp($pdo, $user_id, $_POST);
+        break;
+
+    case 'unlock_achievement':
+        unlockAchievement($pdo, $user_id, $_POST);
+        break;
     default:
         sendJson(['success' => false, 'message' => 'Acción no soportada: ' . $action]);
 }
@@ -410,10 +420,33 @@ function saveReview($pdo, $user_id, $data)
     $rewatch = isset($data['rewatch']) ? 1 : 0;
     $titulo_texto = $data['titulo_texto'] ?? '';
     $artista_texto = $data['artista_texto'] ?? '';
-    if (!$id_cancion || !$comentario) sendJson(['success' => false, 'message' => 'Faltan datos']);
-    $stmt = $pdo->prepare("INSERT INTO resenas (id_usuario, id_cancion, puntuacion, comentario, escuchada_nuevamente, titulo_cancion_texto, artista_texto) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$user_id, $id_cancion, $puntuacion, $comentario, $rewatch, $titulo_texto, $artista_texto]);
-    sendJson(['success' => true, 'id_review' => $pdo->lastInsertId()]);
+
+    if (!$id_cancion || !$comentario) {
+        sendJson(['success' => false, 'message' => 'Faltan datos']);
+    }
+
+    $stmt = $pdo->prepare("
+        INSERT INTO resenas 
+        (id_usuario, id_cancion, puntuacion, comentario, escuchada_nuevamente, titulo_cancion_texto, artista_texto) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([
+        $user_id,
+        $id_cancion,
+        $puntuacion,
+        $comentario,
+        $rewatch,
+        $titulo_texto,
+        $artista_texto
+    ]);
+
+    $id_review = $pdo->lastInsertId();
+
+    $nombre_usuario = obtenerNombreUsuario($pdo, $user_id);
+    $descripcion = "$nombre_usuario reseñó '$titulo_texto' de $artista_texto ⭐ $puntuacion/5";
+    registrarActividad($pdo, $user_id, 'reseña', $id_review, $descripcion);
+
+    sendJson(['success' => true, 'id_review' => $id_review]);
 }
 
 function deleteReview($pdo, $user_id, $data)
@@ -872,7 +905,7 @@ function getPublicProfile($pdo, $current_user_id, $data)
     $playlists = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $stmt = $pdo->prepare("
-        SELECT r.puntuacion, r.comentario, r.fecha, 
+        SELECT r.puntuacion, r.comentario, r.fecha,
                r.titulo_cancion_texto, r.artista_texto,
                COALESCE(a.caratula_url, '') as albumCover
         FROM resenas r
@@ -897,6 +930,34 @@ function getPublicProfile($pdo, $current_user_id, $data)
     $stmt->execute([$current_user_id, $target_user_id]);
     $are_friends = $stmt->fetchColumn() ? true : false;
 
+    $stmt = $pdo->prepare("SELECT xp_total, nivel_actual FROM progreso_usuario WHERE id_usuario = ?");
+    $stmt->execute([$target_user_id]);
+    $progress = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $nivel = 1;
+    $xp = 0;
+    if ($progress) {
+        $xp = (int)$progress['xp_total'];
+        $nivel = (int)$progress['nivel_actual'];
+    }
+
+    $stmt = $pdo->prepare("SELECT nombre, icono FROM niveles WHERE id_nivel = ?");
+    $stmt->execute([$nivel]);
+    $nivelData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$nivelData) {
+        $nivelData = ['nombre' => 'Novato', 'icono' => '🌱'];
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT l.*, lu.fecha_desbloqueo as desbloqueado
+        FROM logros l
+        LEFT JOIN logros_usuario lu ON l.id_logro = lu.id_logro AND lu.id_usuario = ?
+        ORDER BY l.rareza, l.condicion_cantidad
+    ");
+    $stmt->execute([$target_user_id]);
+    $achievements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     sendJson([
         'success' => true,
         'user' => $user,
@@ -909,7 +970,14 @@ function getPublicProfile($pdo, $current_user_id, $data)
         'playlists' => $playlists,
         'reviews' => $reviews,
         'is_following' => $is_following,
-        'are_friends' => $are_friends
+        'are_friends' => $are_friends,
+        'level' => [
+            'id' => $nivel,
+            'nombre' => $nivelData['nombre'],
+            'icono' => $nivelData['icono'],
+            'xp_total' => $xp
+        ],
+        'achievements' => $achievements
     ]);
 }
 
@@ -1141,7 +1209,7 @@ function addPlaylistToLibrary($pdo, $user_id, $data)
 }
 
 // ============================================================
-// ⭐ FUNCIÓN MERGE PLAYLISTS MEJORADA
+// FUNCIÓN MERGE PLAYLISTS 
 // ============================================================
 
 function mergePlaylists($pdo, $user_id, $data)
@@ -1179,7 +1247,7 @@ function mergePlaylists($pdo, $user_id, $data)
     }
 
     // ============================================================
-    // 🔥 NUEVO: CONTAR CANCIONES DE AMBOS
+    //  CONTAR CANCIONES DE AMBOS
     // ============================================================
 
     $stmt = $pdo->prepare("
@@ -1194,8 +1262,8 @@ function mergePlaylists($pdo, $user_id, $data)
     $stmt->execute([$friend_id, $friend_id]);
     $amigo_total = (int)$stmt->fetchColumn();
 
-    // ============================================================
-    // 🔥 CASO 1: AMBOS SON NUEVOS → NO PERMITIR
+    // ===========================================================
+    // CASO 1: AMBOS SON NUEVOS → NO PERMITIR
     // ============================================================
 
     if ($mis_total === 0 && $amigo_total === 0) {
@@ -1208,7 +1276,7 @@ function mergePlaylists($pdo, $user_id, $data)
     }
 
     // ============================================================
-    // 🔥 CASO 2: UNO ES NUEVO → PERMITIR CON ADVERTENCIA
+    // CASO 2: UNO ES NUEVO → PERMITIR CON ADVERTENCIA
     // ============================================================
 
     $warning = false;
@@ -1260,7 +1328,7 @@ function mergePlaylists($pdo, $user_id, $data)
     $total_seleccionadas = [];
 
     // ============================================================
-    // 🔥 ALGORITMO DE SELECCIÓN
+    // ALGORITMO DE SELECCIÓN
     // ============================================================
 
     // Si hay menos de 30 canciones, tomar TODAS las que haya
@@ -1542,4 +1610,270 @@ function checkMergedPlaylist($pdo, $user_id, $data)
     $exists = $stmt->fetchColumn() ? true : false;
 
     sendJson(['success' => true, 'exists' => $exists]);
+}
+
+function getAchievements($pdo, $user_id)
+{
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM logros ORDER BY rareza, condicion_cantidad");
+        $stmt->execute();
+        $allAchievements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmt = $pdo->prepare("SELECT id_logro FROM logros_usuario WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $unlocked = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $stmt = $pdo->prepare("SELECT xp_total, nivel_actual FROM progreso_usuario WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $progress = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$progress) {
+            $stmt = $pdo->prepare("INSERT INTO progreso_usuario (id_usuario, xp_total, nivel_actual) VALUES (?, 0, 1)");
+            $stmt->execute([$user_id]);
+            $progress = ['xp_total' => 0, 'nivel_actual' => 1];
+        }
+
+        $stmt = $pdo->prepare("SELECT * FROM niveles ORDER BY xp_minimo");
+        $stmt->execute();
+        $levels = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $achievements = array_map(function ($ach) use ($unlocked) {
+            $ach['desbloqueado'] = in_array($ach['id_logro'], $unlocked);
+            return $ach;
+        }, $allAchievements);
+
+        sendJson([
+            'success' => true,
+            'achievements' => $achievements,
+            'unlocked' => $unlocked,
+            'xp_total' => (int)$progress['xp_total'],
+            'nivel_actual' => (int)$progress['nivel_actual'],
+            'niveles' => $levels
+        ]);
+    } catch (Exception $e) {
+        sendJson(['success' => false, 'message' => 'Error al obtener logros: ' . $e->getMessage()]);
+    }
+}
+
+function updateXp($pdo, $user_id, $data)
+{
+    try {
+        $xpGained = intval($data['xp'] ?? 0);
+        $actionType = $data['action_type'] ?? '';
+
+        if ($xpGained <= 0) {
+            sendJson(['success' => false, 'message' => 'XP invalido']);
+        }
+
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("SELECT xp_total, nivel_actual FROM progreso_usuario WHERE id_usuario = ? FOR UPDATE");
+        $stmt->execute([$user_id]);
+        $progress = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$progress) {
+            $stmt = $pdo->prepare("INSERT INTO progreso_usuario (id_usuario, xp_total, nivel_actual) VALUES (?, ?, 1)");
+            $stmt->execute([$user_id, $xpGained]);
+            $newXp = $xpGained;
+            $newLevel = 1;
+        } else {
+            $newXp = $progress['xp_total'] + $xpGained;
+            $newLevel = calculateLevel($pdo, $newXp);
+            $stmt = $pdo->prepare("UPDATE progreso_usuario SET xp_total = ?, nivel_actual = ? WHERE id_usuario = ?");
+            $stmt->execute([$newXp, $newLevel, $user_id]);
+        }
+
+        $stats = getUserStatsArray($pdo, $user_id);
+        $unlocked = checkAndUnlockAchievements($pdo, $user_id, $stats);
+
+        $pdo->commit();
+
+        sendJson([
+            'success' => true,
+            'xp_total' => $newXp,
+            'nivel_actual' => $newLevel,
+            'unlocked' => $unlocked
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        sendJson(['success' => false, 'message' => 'Error al actualizar XP: ' . $e->getMessage()]);
+    }
+}
+
+function unlockAchievement($pdo, $user_id, $data)
+{
+    try {
+        $idLogro = $data['id_logro'] ?? '';
+
+        if (empty($idLogro)) {
+            sendJson(['success' => false, 'message' => 'ID de logro requerido']);
+        }
+
+        $stmt = $pdo->prepare("SELECT 1 FROM logros_usuario WHERE id_usuario = ? AND id_logro = ?");
+        $stmt->execute([$user_id, $idLogro]);
+        if ($stmt->fetchColumn()) {
+            sendJson(['success' => false, 'message' => 'Logro ya desbloqueado']);
+        }
+
+        $stmt = $pdo->prepare("SELECT xp FROM logros WHERE id_logro = ?");
+        $stmt->execute([$idLogro]);
+        $xp = $stmt->fetchColumn();
+
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("INSERT INTO logros_usuario (id_usuario, id_logro) VALUES (?, ?)");
+        $stmt->execute([$user_id, $idLogro]);
+
+        if ($xp) {
+            $stmt = $pdo->prepare("UPDATE progreso_usuario SET xp_total = xp_total + ? WHERE id_usuario = ?");
+            $stmt->execute([$xp, $user_id]);
+
+            $stmt = $pdo->prepare("SELECT xp_total FROM progreso_usuario WHERE id_usuario = ?");
+            $stmt->execute([$user_id]);
+            $newXp = $stmt->fetchColumn();
+            $newLevel = calculateLevel($pdo, $newXp);
+
+            $stmt = $pdo->prepare("UPDATE progreso_usuario SET nivel_actual = ? WHERE id_usuario = ?");
+            $stmt->execute([$newLevel, $user_id]);
+        }
+
+        $pdo->commit();
+
+        sendJson([
+            'success' => true,
+            'id_logro' => $idLogro,
+            'xp_gained' => (int)$xp
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        sendJson(['success' => false, 'message' => 'Error al desbloquear logro: ' . $e->getMessage()]);
+    }
+}
+
+function calculateLevel($pdo, $xp)
+{
+    $stmt = $pdo->prepare("SELECT id_nivel FROM niveles WHERE xp_minimo <= ? ORDER BY xp_minimo DESC LIMIT 1");
+    $stmt->execute([$xp]);
+    $level = $stmt->fetchColumn();
+    return $level ? (int)$level : 1;
+}
+
+function getUserStatsArray($pdo, $user_id)
+{
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM canciones WHERE es_sistema = 1 OR id_usuario_subio = ?");
+    $stmt->execute([$user_id]);
+    $songs = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM resenas WHERE id_usuario = ?");
+    $stmt->execute([$user_id]);
+    $reviews = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM playlists WHERE id_usuario = ?");
+    $stmt->execute([$user_id]);
+    $playlists = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM seguidores WHERE id_seguido = ?");
+    $stmt->execute([$user_id]);
+    $followers = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM albumes WHERE id_usuario = ?");
+    $stmt->execute([$user_id]);
+    $albums = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM reproducciones_artista WHERE id_usuario = ?");
+    $stmt->execute([$user_id]);
+    $plays = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(DISTINCT id_reproduccion) as total FROM reproducciones_artista WHERE id_usuario = ?");
+    $stmt->execute([$user_id]);
+    $games = $stmt->fetchColumn() ?: 0;
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM logros_usuario WHERE id_usuario = ? AND id_logro = 'expert'");
+    $stmt->execute([$user_id]);
+    $correctGuesses = $stmt->fetchColumn() ? 10 : 0;
+
+    return [
+        'songs' => (int)$songs,
+        'reviews' => (int)$reviews,
+        'playlists' => (int)$playlists,
+        'followers' => (int)$followers,
+        'albums' => (int)$albums,
+        'plays' => (int)$plays,
+        'games' => (int)$games,
+        'correct_guesses' => (int)$correctGuesses
+    ];
+}
+
+function checkAndUnlockAchievements($pdo, $user_id, $stats)
+{
+    $unlocked = [];
+
+    $stmt = $pdo->prepare("SELECT id_logro FROM logros_usuario WHERE id_usuario = ?");
+    $stmt->execute([$user_id]);
+    $alreadyUnlocked = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $stmt = $pdo->prepare("SELECT * FROM logros");
+    $stmt->execute();
+    $allAchievements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($allAchievements as $ach) {
+        if (in_array($ach['id_logro'], $alreadyUnlocked)) {
+            continue;
+        }
+
+        $conditionMet = false;
+        $type = $ach['condicion_tipo'];
+        $amount = (int)$ach['condicion_cantidad'];
+
+        switch ($type) {
+            case 'plays':
+                $conditionMet = $stats['plays'] >= $amount;
+                break;
+            case 'reviews':
+                $conditionMet = $stats['reviews'] >= $amount;
+                break;
+            case 'playlists':
+                $conditionMet = $stats['playlists'] >= $amount;
+                break;
+            case 'followers':
+                $conditionMet = $stats['followers'] >= $amount;
+                break;
+            case 'albums':
+                $conditionMet = $stats['albums'] >= $amount;
+                break;
+            case 'songs':
+                $conditionMet = $stats['songs'] >= $amount;
+                break;
+            case 'games':
+                $conditionMet = $stats['games'] >= $amount;
+                break;
+            case 'correct_guesses':
+                $conditionMet = $stats['correct_guesses'] >= $amount;
+                break;
+            default:
+                $conditionMet = false;
+        }
+
+        if ($conditionMet) {
+            $stmt = $pdo->prepare("INSERT INTO logros_usuario (id_usuario, id_logro) VALUES (?, ?)");
+            $stmt->execute([$user_id, $ach['id_logro']]);
+            $unlocked[] = $ach['id_logro'];
+
+            if ($ach['xp'] > 0) {
+                $stmt = $pdo->prepare("UPDATE progreso_usuario SET xp_total = xp_total + ? WHERE id_usuario = ?");
+                $stmt->execute([$ach['xp'], $user_id]);
+            }
+        }
+    }
+
+    if (!empty($unlocked)) {
+        $stmt = $pdo->prepare("SELECT xp_total FROM progreso_usuario WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $newXp = $stmt->fetchColumn();
+        $newLevel = calculateLevel($pdo, $newXp);
+        $stmt = $pdo->prepare("UPDATE progreso_usuario SET nivel_actual = ? WHERE id_usuario = ?");
+        $stmt->execute([$newLevel, $user_id]);
+    }
+
+    return $unlocked;
 }

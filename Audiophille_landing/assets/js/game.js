@@ -2,6 +2,7 @@
 import { audio, isPlaying, queue, queueIndex, playActiveSong, setQueue } from "./audio.js";
 import { state } from "./var.js";
 import { setGameKeyboardMode } from "./keyboard.js";
+import { addXpForAction } from "./achievements.js";
 
 // ==================== ESTADO DEL JUEGO ====================
 let currentGameSong = null;
@@ -428,6 +429,7 @@ function checkAnswer(btn, selected) {
   if (isCorrect) {
     score++;
     updateScore();
+    addXpForAction("game_win");
     btn.classList.add("correct");
     if (gameMessage) {
       gameMessage.innerText = "✅ ¡Correcto!";

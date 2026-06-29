@@ -5,6 +5,7 @@ import {
   getFollowing as getFollowingService,
   isFollowing as isFollowingService,
 } from "../services/followService.js";
+import { addXpForAction } from "../achievements.js";
 
 export async function toggleFollowUser(userId, btnElement = null) {
   try {
@@ -14,6 +15,11 @@ export async function toggleFollowUser(userId, btnElement = null) {
       if (btnElement) {
         updateFollowButton(btnElement, data.following);
       }
+
+      if (data.following) {
+        addXpForAction("follow");
+      }
+
       document.dispatchEvent(
         new CustomEvent("follow-updated", {
           detail: { userId, following: data.following },

@@ -552,6 +552,54 @@ function escapeHtml(str) {
   });
 }
 
+export function initMobileSidebar() {
+  const hamburgerBtn = document.getElementById("hamburgerBtn");
+  const sidebar = document.getElementById("sidebarLeft");
+  const overlay = document.getElementById("sidebarOverlay");
+
+  if (!hamburgerBtn || !sidebar || !overlay) {
+    console.warn("Elementos del sidebar móvil no encontrados");
+    return;
+  }
+
+  function openSidebar() {
+    sidebar.classList.add("open");
+    overlay.classList.add("active");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove("open");
+    overlay.classList.remove("active");
+    document.body.style.overflow = "";
+  }
+
+  hamburgerBtn.addEventListener("click", openSidebar);
+  overlay.addEventListener("click", closeSidebar);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && sidebar.classList.contains("open")) {
+      closeSidebar();
+    }
+  });
+
+  window.addEventListener("resize", function () {
+    if (window.innerWidth > 768 && sidebar.classList.contains("open")) {
+      closeSidebar();
+    }
+  });
+
+  document.querySelectorAll(".menu-item, .playlist-link").forEach(function (link) {
+    link.addEventListener("click", function () {
+      if (window.innerWidth <= 768) {
+        closeSidebar();
+      }
+    });
+  });
+
+  return { openSidebar, closeSidebar };
+}
+
 window.renderPlaylistDetailView = renderPlaylistDetailView;
 
 export { refreshUI };

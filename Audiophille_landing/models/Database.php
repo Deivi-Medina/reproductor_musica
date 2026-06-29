@@ -1,5 +1,5 @@
 <?php
-// models/Database.php - Clase para la conexión PDO con creación automática de BD y tablas
+
 require_once dirname(__DIR__) . '/config/database.php';
 
 class Database
@@ -53,7 +53,6 @@ class Database
     {
         $sqls = [];
 
-        // 1. Usuarios
         $sqls[] = "CREATE TABLE IF NOT EXISTS `usuarios` (
             `id_usuario` int NOT NULL AUTO_INCREMENT,
             `nombre_usuario` varchar(50) NOT NULL,
@@ -67,7 +66,6 @@ class Database
             UNIQUE KEY `email` (`email`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 2. Artistas
         $sqls[] = "CREATE TABLE IF NOT EXISTS `artistas` (
             `id_artista` int NOT NULL AUTO_INCREMENT,
             `nombre_artista` varchar(100) NOT NULL,
@@ -78,7 +76,6 @@ class Database
             UNIQUE KEY `nombre_artista` (`nombre_artista`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 3. Álbumes
         $sqls[] = "CREATE TABLE IF NOT EXISTS `albumes` (
             `id_album` int NOT NULL AUTO_INCREMENT,
             `titulo` varchar(100) NOT NULL,
@@ -93,7 +90,6 @@ class Database
             CONSTRAINT `albumes_ibfk_1` FOREIGN KEY (`id_artista`) REFERENCES `artistas` (`id_artista`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 4. Canciones
         $sqls[] = "CREATE TABLE IF NOT EXISTS `canciones` (
             `id_cancion` int NOT NULL AUTO_INCREMENT,
             `titulo` varchar(100) NOT NULL,
@@ -112,7 +108,6 @@ class Database
             CONSTRAINT `canciones_ibfk_2` FOREIGN KEY (`id_usuario_subio`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 5. Playlists
         $sqls[] = "CREATE TABLE IF NOT EXISTS `playlists` (
             `id_playlist` int NOT NULL AUTO_INCREMENT,
             `nombre` varchar(50) NOT NULL,
@@ -125,7 +120,6 @@ class Database
             CONSTRAINT `playlists_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 6. playlist_canciones
         $sqls[] = "CREATE TABLE IF NOT EXISTS `playlist_canciones` (
             `id_playlist` int NOT NULL,
             `id_cancion` int NOT NULL,
@@ -136,7 +130,6 @@ class Database
             CONSTRAINT `playlist_canciones_ibfk_2` FOREIGN KEY (`id_cancion`) REFERENCES `canciones` (`id_cancion`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 7. Favoritos
         $sqls[] = "CREATE TABLE IF NOT EXISTS `favoritos` (
             `id_usuario` int NOT NULL,
             `id_cancion` int NOT NULL,
@@ -147,7 +140,6 @@ class Database
             CONSTRAINT `favoritos_ibfk_2` FOREIGN KEY (`id_cancion`) REFERENCES `canciones` (`id_cancion`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 8. Reseñas
         $sqls[] = "CREATE TABLE IF NOT EXISTS `resenas` (
             `id_review` int NOT NULL AUTO_INCREMENT,
             `id_usuario` int NOT NULL,
@@ -165,7 +157,6 @@ class Database
             CONSTRAINT `resenas_ibfk_2` FOREIGN KEY (`id_cancion`) REFERENCES `canciones` (`id_cancion`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 9. Configuración EQ
         $sqls[] = "CREATE TABLE IF NOT EXISTS `configuracion_eq` (
             `id_usuario` int NOT NULL,
             `bass` int DEFAULT '0',
@@ -175,7 +166,6 @@ class Database
             CONSTRAINT `configuracion_eq_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 10. Artistas seguidos
         $sqls[] = "CREATE TABLE IF NOT EXISTS `artistas_seguidos` (
             `id_usuario` int NOT NULL,
             `nombre_artista` varchar(100) NOT NULL,
@@ -183,7 +173,6 @@ class Database
             CONSTRAINT `artistas_seguidos_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 11. Reproducciones artista
         $sqls[] = "CREATE TABLE IF NOT EXISTS `reproducciones_artista` (
             `id_reproduccion` int NOT NULL AUTO_INCREMENT,
             `id_usuario` int NOT NULL,
@@ -197,7 +186,6 @@ class Database
             CONSTRAINT `reproducciones_artista_ibfk_2` FOREIGN KEY (`id_artista`) REFERENCES `artistas` (`id_artista`) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 12. Sesiones
         $sqls[] = "CREATE TABLE IF NOT EXISTS `sesiones` (
             `id_sesion` int NOT NULL AUTO_INCREMENT,
             `token` varchar(255) NOT NULL,
@@ -210,9 +198,6 @@ class Database
             CONSTRAINT `sesiones_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // ========== NUEVAS TABLAS SOCIALES ==========
-
-        // 13. Seguidores
         $sqls[] = "CREATE TABLE IF NOT EXISTS `seguidores` (
             `id_seguidor` int NOT NULL AUTO_INCREMENT,
             `id_usuario` int NOT NULL,
@@ -225,7 +210,6 @@ class Database
             CONSTRAINT `seguidores_ibfk_2` FOREIGN KEY (`id_seguido`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 14. Actividad Social (Feed)
         $sqls[] = "CREATE TABLE IF NOT EXISTS `actividad_social` (
             `id_actividad` int NOT NULL AUTO_INCREMENT,
             `id_usuario` int NOT NULL,
@@ -239,7 +223,6 @@ class Database
             CONSTRAINT `actividad_social_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 15. Amigos (relación bidireccional - opcional, pero la dejamos por si se usa en el futuro)
         $sqls[] = "CREATE TABLE IF NOT EXISTS `amigos` (
             `id_usuario1` int NOT NULL,
             `id_usuario2` int NOT NULL,
@@ -250,7 +233,6 @@ class Database
             CONSTRAINT `amigos_ibfk_2` FOREIGN KEY (`id_usuario2`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
-        // 16. Playlists compartidas (para futuras mejoras)
         $sqls[] = "CREATE TABLE IF NOT EXISTS `playlists_compartidas` (
             `id_compartida` int NOT NULL AUTO_INCREMENT,
             `id_playlist` int NOT NULL,
@@ -267,73 +249,158 @@ class Database
             CONSTRAINT `playlists_compartidas_ibfk_3` FOREIGN KEY (`id_usuario_invitado`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
+        $sqls[] = "CREATE TABLE IF NOT EXISTS `niveles` (
+            `id_nivel` int PRIMARY KEY,
+            `nombre` varchar(50) NOT NULL,
+            `icono` varchar(10) NOT NULL,
+            `xp_minimo` int NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
+
+        $sqls[] = "CREATE TABLE IF NOT EXISTS `logros` (
+            `id_logro` varchar(50) PRIMARY KEY,
+            `nombre` varchar(100) NOT NULL,
+            `descripcion` text,
+            `icono` varchar(10) NOT NULL,
+            `rareza` enum('comun','raro','epico','legendario') DEFAULT 'comun',
+            `xp` int NOT NULL,
+            `condicion_tipo` varchar(50) NOT NULL,
+            `condicion_cantidad` int NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
+
+        $sqls[] = "CREATE TABLE IF NOT EXISTS `progreso_usuario` (
+            `id_usuario` int PRIMARY KEY,
+            `xp_total` int DEFAULT 0,
+            `nivel_actual` int DEFAULT 1,
+            CONSTRAINT `progreso_usuario_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
+
+        $sqls[] = "CREATE TABLE IF NOT EXISTS `logros_usuario` (
+            `id_usuario` int,
+            `id_logro` varchar(50),
+            `fecha_desbloqueo` timestamp DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id_usuario`,`id_logro`),
+            CONSTRAINT `logros_usuario_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE,
+            CONSTRAINT `logros_usuario_ibfk_2` FOREIGN KEY (`id_logro`) REFERENCES `logros` (`id_logro`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
+
         foreach ($sqls as $sql) {
             $this->conn->exec($sql);
         }
 
-        // Insertar datos iniciales
         $this->insertInitialData();
     }
 
     private function insertInitialData()
     {
-        // Verificar si ya existen artistas
-        $stmt = $this->conn->query("SELECT COUNT(*) FROM artistas");
-        $countArtists = $stmt->fetchColumn();
+        $this->insertArtistsAndAlbums();
+        $this->insertLevelsAndAchievements();
+    }
 
-        if ($countArtists == 0) {
-            $stmt = $this->conn->prepare("INSERT INTO artistas (nombre_artista, pais, biografia) VALUES 
-                ('The Beatles', 'Reino Unido', 'Banda de rock británica formada en Liverpool.'),
-                ('Pink Floyd', 'Reino Unido', 'Banda de rock progresivo y psicodélico.'),
-                ('suei', NULL, 'Artista venezolano de música electrónica y VGM.'),
-                ('Michael Jackson', 'Estados Unidos', 'Cantante, compositor y bailarín estadounidense.')");
-            $stmt->execute();
+    private function insertArtistsAndAlbums()
+    {
+        $stmt = $this->conn->query("SELECT COUNT(*) FROM artistas");
+        if ($stmt->fetchColumn() > 0) {
+            return;
         }
 
-        // Verificar si ya existen álbumes
-        $stmt = $this->conn->query("SELECT COUNT(*) FROM albumes");
-        $countAlbums = $stmt->fetchColumn();
+        $stmt = $this->conn->prepare("INSERT INTO artistas (nombre_artista, pais, biografia) VALUES 
+            ('The Beatles', 'Reino Unido', 'Banda de rock británica formada en Liverpool.'),
+            ('Pink Floyd', 'Reino Unido', 'Banda de rock progresivo y psicodélico.'),
+            ('suei', NULL, 'Artista venezolano de música electrónica y VGM.'),
+            ('Michael Jackson', 'Estados Unidos', 'Cantante, compositor y bailarín estadounidense.')");
+        $stmt->execute();
 
-        if ($countAlbums == 0) {
-            $artists = [];
-            $stmt = $this->conn->query("SELECT id_artista, nombre_artista FROM artistas");
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $artists[$row['nombre_artista']] = $row['id_artista'];
-            }
+        $artists = [];
+        $stmt = $this->conn->query("SELECT id_artista, nombre_artista FROM artistas");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $artists[$row['nombre_artista']] = $row['id_artista'];
+        }
 
-            $albums = [
-                ['A Hard Day\'s Night', $artists['The Beatles'], 1964, 'https://i.ytimg.com/vi/5en2JMLA8Z0/maxresdefault.jpg', 'Rock \'n\' Roll'],
-                ['The Dark Side of the Moon', $artists['Pink Floyd'], 1973, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpKDuWTcpap2UJCkmnVBhDJwuh2y3aD-6iPrS6nohjKOUaivKLf7mB9zU&s=10', 'Progressive Rock'],
-                ['Teselia', $artists['suei'], 2020, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSshQdcG--1OpDBbvgkGDbICgjP2pIeMGhQ7g&s', 'Soundtrack / VGM'],
-                ['Thriller', $artists['Michael Jackson'], 1982, 'https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png', 'Pop / R&B']
-            ];
+        if (empty($artists)) {
+            return;
+        }
 
-            $stmt = $this->conn->prepare("INSERT INTO albumes (titulo, id_artista, anio, caratula_url, genero, es_sistema) VALUES (?, ?, ?, ?, ?, 1)");
-            foreach ($albums as $album) {
-                $stmt->execute($album);
-            }
+        $albums = [
+            ['A Hard Day\'s Night', $artists['The Beatles'], 1964, 'https://i.ytimg.com/vi/5en2JMLA8Z0/maxresdefault.jpg', 'Rock \'n\' Roll'],
+            ['The Dark Side of the Moon', $artists['Pink Floyd'], 1973, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpKDuWTcpap2UJCkmnVBhDJwuh2y3aD-6iPrS6nohjKOUaivKLf7mB9zU&s=10', 'Progressive Rock'],
+            ['Teselia', $artists['suei'], 2020, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSshQdcG--1OpDBbvgkGDbICgjP2pIeMGhQ7g&s', 'Soundtrack / VGM'],
+            ['Thriller', $artists['Michael Jackson'], 1982, 'https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png', 'Pop / R&B']
+        ];
 
-            $albumsIds = [];
-            $stmt = $this->conn->query("SELECT id_album, titulo FROM albumes");
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $albumsIds[$row['titulo']] = $row['id_album'];
-            }
+        $stmt = $this->conn->prepare("INSERT INTO albumes (titulo, id_artista, anio, caratula_url, genero, es_sistema) VALUES (?, ?, ?, ?, ?, 1)");
+        foreach ($albums as $album) {
+            $stmt->execute($album);
+        }
 
-            $songs = [
-                ['And I Love Her', $albumsIds["A Hard Day's Night"], 'uploads/audios/AHDN/AndILoveHer.mp3', 1, 'Rock Ballad'],
-                ['If I Fell', $albumsIds["A Hard Day's Night"], 'uploads/audios/AHDN/IfIFell.mp3', 2, 'Rock'],
-                ['Money', $albumsIds['The Dark Side of the Moon'], 'uploads/audios/TDSOTM/money.mp3', 1, 'Rock / Blues'],
-                ['Time', $albumsIds['The Dark Side of the Moon'], 'uploads/audios/TDSOTM/Time.mp3', 2, 'Rock'],
-                ['Kaku', $albumsIds['Teselia'], 'uploads/audios/Teselia/kaku.mp3', 1, 'Acoustic'],
-                ['Knousee', $albumsIds['Teselia'], 'uploads/audios/Teselia/knousee.mp3', 2, 'Jazz Fusion'],
-                ['The Girl Is Mine', $albumsIds['Thriller'], 'uploads/audios/Thriller/TheGirlIsMine.mp3', 1, 'Pop'],
-                ['Billie Jean', $albumsIds['Thriller'], 'uploads/audios/Thriller/BillieJean.mp3', 2, 'Dance-Pop']
-            ];
+        $albumsIds = [];
+        $stmt = $this->conn->query("SELECT id_album, titulo FROM albumes");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $albumsIds[$row['titulo']] = $row['id_album'];
+        }
 
-            $stmt = $this->conn->prepare("INSERT INTO canciones (titulo, id_album, archivo_url, numero_pista, genero, es_sistema) VALUES (?, ?, ?, ?, ?, 1)");
-            foreach ($songs as $song) {
-                $stmt->execute($song);
-            }
+        if (empty($albumsIds)) {
+            return;
+        }
+
+        $songs = [
+            ['And I Love Her', $albumsIds["A Hard Day's Night"], 'uploads/audios/AHDN/AndILoveHer.mp3', 1, 'Rock Ballad'],
+            ['If I Fell', $albumsIds["A Hard Day's Night"], 'uploads/audios/AHDN/IfIFell.mp3', 2, 'Rock'],
+            ['Money', $albumsIds['The Dark Side of the Moon'], 'uploads/audios/TDSOTM/money.mp3', 1, 'Rock / Blues'],
+            ['Time', $albumsIds['The Dark Side of the Moon'], 'uploads/audios/TDSOTM/Time.mp3', 2, 'Rock'],
+            ['Kaku', $albumsIds['Teselia'], 'uploads/audios/Teselia/kaku.mp3', 1, 'Acoustic'],
+            ['Knousee', $albumsIds['Teselia'], 'uploads/audios/Teselia/knousee.mp3', 2, 'Jazz Fusion'],
+            ['The Girl Is Mine', $albumsIds['Thriller'], 'uploads/audios/Thriller/TheGirlIsMine.mp3', 1, 'Pop'],
+            ['Billie Jean', $albumsIds['Thriller'], 'uploads/audios/Thriller/BillieJean.mp3', 2, 'Dance-Pop']
+        ];
+
+        $stmt = $this->conn->prepare("INSERT INTO canciones (titulo, id_album, archivo_url, numero_pista, genero, es_sistema) VALUES (?, ?, ?, ?, ?, 1)");
+        foreach ($songs as $song) {
+            $stmt->execute($song);
+        }
+    }
+
+    private function insertLevelsAndAchievements()
+    {
+        $stmt = $this->conn->query("SELECT COUNT(*) FROM niveles");
+        if ($stmt->fetchColumn() > 0) {
+            return;
+        }
+
+        $levels = [
+            [1, 'Novato', '🌱', 0],
+            [2, 'Oyente', '🎧', 50],
+            [3, 'Melómano', '🎵', 150],
+            [4, 'Audiófilo', '🔊', 350],
+            [5, 'Maestro', '🎶', 700],
+            [6, 'AudioPhille', '👑', 1200]
+        ];
+
+        $stmt = $this->conn->prepare("INSERT INTO niveles (id_nivel, nombre, icono, xp_minimo) VALUES (?, ?, ?, ?)");
+        foreach ($levels as $level) {
+            $stmt->execute($level);
+        }
+
+        $achievements = [
+            ['first_play', 'Primera escucha', 'Reproduce tu primera canción', '🎵', 'comun', 10, 'plays', 1],
+            ['first_review', 'Primer crítico', 'Escribe tu primera reseña', '✍️', 'comun', 10, 'reviews', 1],
+            ['first_playlist', 'Creador', 'Crea tu primera playlist', '📁', 'comun', 10, 'playlists', 1],
+            ['gamer', 'Jugador', 'Juega tu primera partida', '🎮', 'comun', 10, 'games', 1],
+            ['collector', 'Coleccionista', 'Tienes 50 canciones en tu biblioteca', '📀', 'raro', 20, 'songs', 50],
+            ['curator', 'Curador', 'Crea 10 playlists', '🎨', 'raro', 30, 'playlists', 10],
+            ['social', 'Sociable', 'Tienes 5 seguidores', '👥', 'raro', 15, 'followers', 5],
+            ['album_filia', 'Álbum filia', 'Crea 5 álbumes', '💿', 'raro', 25, 'albums', 5],
+            ['critic', 'Crítico musical', 'Escribe 50 reseñas', '⭐', 'epico', 50, 'reviews', 50],
+            ['melomano', 'Melómano', 'Has escuchado 1000 canciones', '🎧', 'epico', 50, 'plays', 1000],
+            ['influencer', 'Influencer', 'Tienes 50 seguidores', '🔥', 'epico', 40, 'followers', 50],
+            ['expert', 'Experto musical', 'Acierta 10 canciones en el juego', '🏆', 'legendario', 30, 'correct_guesses', 10]
+        ];
+
+        $stmt = $this->conn->prepare("
+            INSERT INTO logros (id_logro, nombre, descripcion, icono, rareza, xp, condicion_tipo, condicion_cantidad)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        foreach ($achievements as $ach) {
+            $stmt->execute($ach);
         }
     }
 }

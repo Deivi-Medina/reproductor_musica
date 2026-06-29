@@ -4,8 +4,8 @@ import { renderAlbumCards, openAlbumView } from "./ui.js";
 import { showSection } from "./navigation.js";
 import { openEditPlaylistModal, deleteActivePlaylist } from "./playlist.js";
 import { showAlert, showConfirm } from "./modals.js";
-import { post } from "./api.js"; // 👈 NUEVO: importar el servicio centralizado
-
+import { post } from "./api.js"; //
+import { addXpForAction } from "./achievements.js";
 // ============================================================
 // ESTADO LOCAL
 // ============================================================

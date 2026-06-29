@@ -1,4 +1,4 @@
-// js/audio.js
+// assets/js/audio.js
 import DOM, { state, formatTimerString } from "./var.js";
 import { renderReviews } from "./reviews.js";
 import { renderQueueSidebarList, renderTrackActiveStylings, updatePlayingUIs } from "./ui.js";
@@ -6,15 +6,13 @@ import { toggleFavorite } from "./services/favoriteService.js";
 import { registerPlay } from "./services/playStatsService.js";
 
 // ============================================================
-// AUDIO ELEMENT
+// ELEMENTO DE AUDIO ÚNICO
 // ============================================================
 export const audio = new Audio();
 audio.crossOrigin = "anonymous";
 audio.preload = "auto";
+audio.volume = 1;
 
-// ============================================================
-// ESTADO DEL REPRODUCTOR
-// ============================================================
 export let queue = [];
 export let queueIndex = 0;
 export let isPlaying = false;
@@ -24,7 +22,7 @@ let pistaContabilizada = false;
 let currentPlayPromise = null;
 
 // ============================================================
-// ESTADO DEL ECUALIZADOR (AudioContext)
+// NODOS DEL ECUALLIZADOR (AudioContext)
 // ============================================================
 let audioCtx = null;
 let audioSource = null;
@@ -33,16 +31,15 @@ let filterVocals = null;
 let filterTreble = null;
 
 // ============================================================
-// FUNCIONES DE COLA
+// FUNCIONES DE COLA Y REPRODUCCIÓN
 // ============================================================
 export function setQueue(newQueue, newIndex = 0) {
   queue = newQueue;
   queueIndex = newIndex;
+  audio.src = "";
+  audio.load();
 }
 
-// ============================================================
-// REPRODUCCIÓN
-// ============================================================
 export async function playActiveSong() {
   if (queue.length === 0) return;
   const song = queue[queueIndex];
@@ -101,6 +98,7 @@ export async function togglePlayPause() {
 
 export function playNextTrack() {
   if (queue.length === 0) return;
+
   if (isShuffleActive && queue.length > 1) {
     let nIdx;
     do {
@@ -110,17 +108,41 @@ export function playNextTrack() {
   } else {
     queueIndex = (queueIndex + 1) % queue.length;
   }
-  playActiveSong();
+
+  const nextSong = queue[queueIndex];
+  audio.pause();
+  audio.currentTime = 0;
+  audio.src = nextSong.file;
+  audio.load();
+  audio
+    .play()
+    .then(() => {
+      isPlaying = true;
+      updatePlayingUIs(true);
+      renderQueueSidebarList();
+    })
+    .catch(() => {});
 }
 
 export function playPrevTrack() {
   if (queue.length === 0) return;
   queueIndex = (queueIndex - 1 + queue.length) % queue.length;
-  playActiveSong();
+  const song = queue[queueIndex];
+  audio.pause();
+  audio.currentTime = 0;
+  audio.src = song.file;
+  audio.load();
+  audio
+    .play()
+    .then(() => {
+      isPlaying = true;
+      updatePlayingUIs(true);
+    })
+    .catch(() => {});
 }
 
 // ============================================================
-// SHUFFLE / REPEAT
+// CONTROLES ADICIONALES (Shuffle, Repeat, Favoritos)
 // ============================================================
 export function toggleShuffle() {
   isShuffleActive = !isShuffleActive;
@@ -136,21 +158,14 @@ export function toggleRepeat() {
   }
 }
 
-// ============================================================
-// FAVORITOS (USANDO SERVICIO)
-// ============================================================
 export async function toggleFavoriteStatus() {
   if (queue.length === 0) return;
   const currentSong = queue[queueIndex];
-  if (!currentSong.id_cancion) {
-    console.warn("La canción no tiene id_cancion, no se puede marcar como favorita");
-    return;
-  }
+  if (!currentSong.id_cancion) return;
 
   try {
     const result = await toggleFavorite(currentSong.id_cancion);
     if (result.success) {
-      // Actualizar estado local
       if (result.favorito) {
         if (!state.favorites.some((s) => s.id_cancion === currentSong.id_cancion)) {
           state.favorites.push(currentSong);
@@ -158,31 +173,27 @@ export async function toggleFavoriteStatus() {
       } else {
         state.favorites = state.favorites.filter((s) => s.id_cancion !== currentSong.id_cancion);
       }
-      // Actualizar UI
       updatePlayingUIs(isPlaying);
-    } else {
-      console.error("Error al cambiar favorito:", result.message);
     }
   } catch (error) {
-    console.error("Error de red al cambiar favorito:", error);
+    console.error("Error al cambiar favorito:", error);
   }
 }
 
 // ============================================================
-// REGISTRO DE REPRODUCCIÓN (USANDO SERVICIO)
+// EVENTOS DEL AUDIO (timeupdate, ended)
 // ============================================================
 function onAudioTimeUpdate() {
   if (!audio.duration) return;
   const progressPercent = (audio.currentTime / audio.duration) * 100;
 
-  // Actualizar UI de progreso
   if (DOM.miniPlayer.progressFill) {
     DOM.miniPlayer.progressFill.style.width = `${progressPercent}%`;
   }
   if (DOM.audioControls.progressFill) {
     DOM.audioControls.progressFill.style.width = `${progressPercent}%`;
   }
-  if (DOM.audioControls.scrubber) {
+  if (DOM.audioControls.scrubber && !window.isScrubbing) {
     DOM.audioControls.scrubber.value = progressPercent;
   }
   if (DOM.audioControls.timeCurrent) {
@@ -192,33 +203,30 @@ function onAudioTimeUpdate() {
     DOM.audioControls.timeTotal.innerText = formatTimerString(audio.duration);
   }
 
-  // Registrar reproducción al 70% (solo una vez por canción)
   if (progressPercent >= 70 && !pistaContabilizada && queue.length > 0) {
-    const track = queue[queueIndex];
-    registerPlay(track); // Servicio centralizado
+    registerPlay(queue[queueIndex]);
     pistaContabilizada = true;
   }
 }
 
 function onAudioEnded() {
-  if (isRepeatActive) {
+  if (isRepeatActive && queue.length === 1) {
     audio.currentTime = 0;
-    audio.play().catch(console.error);
+    audio.play().catch(() => {});
   } else {
     playNextTrack();
   }
 }
 
-// ============================================================
-// EVENTOS DEL AUDIO
-// ============================================================
 export function bindAudioEvents() {
+  audio.removeEventListener("timeupdate", onAudioTimeUpdate);
+  audio.removeEventListener("ended", onAudioEnded);
   audio.addEventListener("timeupdate", onAudioTimeUpdate);
   audio.addEventListener("ended", onAudioEnded);
 }
 
 // ============================================================
-// ECUALIZADOR (AudioContext)
+// INICIALIZACIÓN DEL AUDIO CONTEXT Y ECUALLIZADOR
 // ============================================================
 function initAudioContext() {
   if (audioCtx) return;
@@ -251,12 +259,18 @@ function initAudioContext() {
     filterTreble.connect(audioCtx.destination);
   } catch (e) {
     console.error("Error al inicializar AudioContext:", e);
+    audioCtx = null;
+    audioSource = null;
+    filterBass = null;
+    filterVocals = null;
+    filterTreble = null;
   }
 }
 
 export function prepareAudio() {
-  initAudioContext();
-  if (audioCtx && audioCtx.state === "suspended") {
+  if (!audioCtx) {
+    initAudioContext();
+  } else if (audioCtx.state === "suspended") {
     audioCtx.resume();
   }
 }
@@ -279,4 +293,30 @@ export function updateEqualizerNodeValues() {
   if (filterBass) filterBass.gain.value = bassVal;
   if (filterVocals) filterVocals.gain.value = vocalsVal;
   if (filterTreble) filterTreble.gain.value = trebleVal;
+}
+
+// ============================================================
+// 🆕 VINCULACIÓN DEL VOLUMEN GENERAL CON EL SLIDER DEL ECUALLIZADOR
+// ============================================================
+const volSlider = DOM.audioControls.volSlider;
+const lblMasterVol = DOM.fullPlayer.lblMasterVol;
+
+if (volSlider) {
+  // Cuando el usuario mueve el slider
+  volSlider.addEventListener("input", function () {
+    const val = parseFloat(this.value);
+    // Ajustar el volumen del audio (0 a 1)
+    audio.volume = val / 100;
+    // Actualizar la etiqueta del porcentaje
+    if (lblMasterVol) {
+      lblMasterVol.textContent = val + "%";
+    }
+  });
+
+  // Inicializar el volumen y la etiqueta con el valor del slider
+  const initialVal = parseFloat(volSlider.value);
+  audio.volume = initialVal / 100;
+  if (lblMasterVol) {
+    lblMasterVol.textContent = initialVal + "%";
+  }
 }

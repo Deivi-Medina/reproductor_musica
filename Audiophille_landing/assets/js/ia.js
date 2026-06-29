@@ -309,6 +309,7 @@ async function manejarFlujoAlbum(mensajeUsuario, prompt, callbackActualizarInter
         if (callbackActualizarInterfaz) await callbackActualizarInterfaz();
         else await refreshUI();
         window.curAlbumCreation.active = false;
+        addXpForAction("album");
         return `<b>🎉 Álbum "${cur.titulo}" publicado</b><br>Contiene ${cur.songs.length} canciones.`;
       } else {
         return `❌ Error: ${data.message}`;

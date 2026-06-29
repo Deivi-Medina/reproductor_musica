@@ -21,6 +21,7 @@ import {
   renderPlaylistDetailView,
   addContextSongToQueue,
   addContextSongToSpecificPlaylist,
+  initMobileSidebar,
 } from "./ui.js";
 import { renderPlaylistsSidebarLinks, openPlaylistModal, closePlaylistModal, createPlaylistAction } from "./playlist.js";
 import {
@@ -39,16 +40,22 @@ import { openArtistProfile } from "./artists.js";
 import { initCommunityTabs } from "./community.js";
 import { openPublicProfile } from "./social/profiles.js";
 import { getUserProfile, getUserStats, updateUserProfile } from "./services/userService.js";
+import { initAchievements, addXpForAction } from "./achievements.js";
+import { initTheme } from "./theme.js";
+import { initSettings, openSettings, closeSettings } from "./settings.js";
+import { isCrossfadeEnabled, setCrossfadeEnabled } from "./crossfade.js";
+
+window.isScrubbing = false;
 
 async function initApp() {
-  const loader = document.createElement("div");
+  var loader = document.createElement("div");
   loader.id = "app-loader";
   loader.textContent = "Cargando tu biblioteca musical...";
   loader.style.cssText =
     "position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); color:white; padding:1rem 2rem; border-radius:30px; z-index:10000; backdrop-filter:blur(10px);";
   document.body.appendChild(loader);
 
-  const success = await loadInitialData();
+  var success = await loadInitialData();
   if (!success) {
     alert("Error al cargar los datos. Intenta recargar la página.");
     loader.remove();
@@ -61,35 +68,54 @@ async function initApp() {
   bindAudioEvents();
   initKeyboardControls();
   initGameDOM();
+  initMobileSidebar();
+  await initAchievements();
+  initTheme();
+  initSettings();
 
   if (DOM.sidebar.navHome) {
-    DOM.sidebar.navHome.addEventListener("click", () => showSection("home"));
+    DOM.sidebar.navHome.addEventListener("click", function () {
+      showSection("home");
+    });
   }
   if (DOM.sidebar.navFavorites) {
-    DOM.sidebar.navFavorites.addEventListener("click", () => showSection("favorites"));
+    DOM.sidebar.navFavorites.addEventListener("click", function () {
+      showSection("favorites");
+    });
   }
   if (DOM.sidebar.navDiary) {
-    DOM.sidebar.navDiary.addEventListener("click", () => showSection("diary"));
+    DOM.sidebar.navDiary.addEventListener("click", function () {
+      showSection("diary");
+    });
   }
   if (DOM.sidebar.navGame) {
-    DOM.sidebar.navGame.addEventListener("click", () => {
+    DOM.sidebar.navGame.addEventListener("click", function () {
       showSection("game");
-      setTimeout(() => {
+      setTimeout(function () {
         if (typeof startGame === "function") startGame();
       }, 100);
     });
   }
   if (DOM.sidebar.navProfile) {
-    DOM.sidebar.navProfile.addEventListener("click", () => {
+    DOM.sidebar.navProfile.addEventListener("click", function () {
       showSection("profile");
-      setTimeout(() => {
+      setTimeout(function () {
         if (typeof window.loadProfileData === "function") window.loadProfileData();
       }, 100);
     });
   }
   if (DOM.sidebar.navCommunity) {
-    DOM.sidebar.navCommunity.addEventListener("click", () => {
+    DOM.sidebar.navCommunity.addEventListener("click", function () {
       showSection("community");
+    });
+  }
+
+  var settingsSidebarBtn = document.getElementById("btnSettingsSidebar");
+  if (settingsSidebarBtn) {
+    settingsSidebarBtn.addEventListener("click", function () {
+      if (typeof openSettings === "function") {
+        openSettings();
+      }
     });
   }
 
@@ -106,12 +132,12 @@ async function initApp() {
     DOM.modal.btnConfirm.addEventListener("click", createPlaylistAction);
   }
 
-  document.addEventListener("click", () => {
-    DOM.contextMenu.container?.classList.add("hidden");
+  document.addEventListener("click", function () {
+    if (DOM.contextMenu.container) DOM.contextMenu.container.classList.add("hidden");
   });
   if (DOM.contextMenu.container) {
-    DOM.contextMenu.container.addEventListener("click", (e) => {
-      const target = e.target.closest(".context-option");
+    DOM.contextMenu.container.addEventListener("click", function (e) {
+      var target = e.target.closest(".context-option");
       if (!target) return;
       if (target.id === "ctxAddToQueue") {
         addContextSongToQueue();
@@ -123,7 +149,7 @@ async function initApp() {
   }
 
   if (DOM.audioControls.volSlider) {
-    DOM.audioControls.volSlider.addEventListener("input", (e) => {
+    DOM.audioControls.volSlider.addEventListener("input", function (e) {
       audio.volume = e.target.value / 100;
     });
   }
@@ -149,21 +175,62 @@ async function initApp() {
     DOM.fullPlayer.btnFavorite.addEventListener("click", toggleFavoriteStatus);
   }
 
+  var crossfadeBtn = document.getElementById("btnCrossfade");
+  if (crossfadeBtn) {
+    function updateCrossfadeButton() {
+      var enabled = isCrossfadeEnabled();
+      crossfadeBtn.classList.toggle("active", enabled);
+    }
+
+    crossfadeBtn.addEventListener("click", function () {
+      var newState = !isCrossfadeEnabled();
+      setCrossfadeEnabled(newState);
+      updateCrossfadeButton();
+
+      var settingsToggle = document.getElementById("settingsCrossfadeToggle");
+      if (settingsToggle) {
+        settingsToggle.checked = newState;
+      }
+    });
+
+    updateCrossfadeButton();
+  }
+
+  var settingsBtn = document.getElementById("btnSettings");
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", function () {
+      if (typeof openSettings === "function") {
+        openSettings();
+      }
+    });
+  }
+
   if (DOM.audioControls.scrubber) {
-    DOM.audioControls.scrubber.addEventListener("input", (e) => {
-      if (audio.duration) {
-        audio.currentTime = (e.target.value / 100) * audio.duration;
+    DOM.audioControls.scrubber.addEventListener("pointerdown", function () {
+      window.isScrubbing = true;
+    });
+
+    DOM.audioControls.scrubber.addEventListener("pointerup", function (e) {
+      window.isScrubbing = false;
+      if (audio.duration && !isNaN(audio.duration)) {
+        audio.currentTime = (parseFloat(e.target.value) / 100) * audio.duration;
+      }
+    });
+
+    DOM.audioControls.scrubber.addEventListener("input", function (e) {
+      if (audio.duration && !isNaN(audio.duration) && window.isScrubbing) {
+        audio.currentTime = (parseFloat(e.target.value) / 100) * audio.duration;
       }
     });
   }
 
   if (DOM.views.searchBar) {
-    DOM.views.searchBar.addEventListener("input", (e) => {
+    DOM.views.searchBar.addEventListener("input", function (e) {
       renderAlbumCards(e.target.value);
     });
   }
 
-  window.expandFullPlayer = () => {
+  window.expandFullPlayer = function () {
     if (DOM.fullPlayer.container) {
       DOM.fullPlayer.container.classList.remove("hidden");
     }
@@ -171,7 +238,7 @@ async function initApp() {
       DOM.sidebar.navDiary.classList.add("hidden");
     }
   };
-  window.minimizeFullPlayer = () => {
+  window.minimizeFullPlayer = function () {
     if (DOM.fullPlayer.container) {
       DOM.fullPlayer.container.classList.add("hidden");
     }
@@ -181,7 +248,7 @@ async function initApp() {
   };
 
   if (DOM.equalizer.btnToggle && DOM.equalizer.sidebar) {
-    DOM.equalizer.btnToggle.addEventListener("click", () => {
+    DOM.equalizer.btnToggle.addEventListener("click", function () {
       DOM.equalizer.sidebar.classList.toggle("collapsed");
       if (!DOM.equalizer.sidebar.classList.contains("collapsed")) {
         if (DOM.queue.sidebar) DOM.queue.sidebar.classList.add("collapsed");
@@ -190,7 +257,7 @@ async function initApp() {
     });
   }
   if (DOM.queue.btnToggle && DOM.queue.sidebar) {
-    DOM.queue.btnToggle.addEventListener("click", () => {
+    DOM.queue.btnToggle.addEventListener("click", function () {
       DOM.queue.sidebar.classList.toggle("collapsed");
       if (!DOM.queue.sidebar.classList.contains("collapsed") && DOM.equalizer.sidebar) {
         DOM.equalizer.sidebar.classList.add("collapsed");
@@ -208,7 +275,7 @@ async function initApp() {
     DOM.equalizer.trebleSlider.addEventListener("input", updateEqualizerNodeValues);
   }
   if (DOM.equalizer.btnReset) {
-    DOM.equalizer.btnReset.addEventListener("click", () => {
+    DOM.equalizer.btnReset.addEventListener("click", function () {
       if (DOM.equalizer.bassSlider) DOM.equalizer.bassSlider.value = 0;
       if (DOM.equalizer.vocalsSlider) DOM.equalizer.vocalsSlider.value = 0;
       if (DOM.equalizer.trebleSlider) DOM.equalizer.trebleSlider.value = 0;
@@ -218,20 +285,20 @@ async function initApp() {
   }
 
   if (DOM.musikWidget.btnTrigger && DOM.musikWidget.chatWindow) {
-    DOM.musikWidget.btnTrigger.addEventListener("click", () => {
+    DOM.musikWidget.btnTrigger.addEventListener("click", function () {
       DOM.musikWidget.chatWindow.classList.toggle("musik-hidden");
     });
   }
   if (DOM.musikWidget.btnMinimize && DOM.musikWidget.chatWindow) {
-    DOM.musikWidget.btnMinimize.addEventListener("click", () => {
+    DOM.musikWidget.btnMinimize.addEventListener("click", function () {
       DOM.musikWidget.chatWindow.classList.add("musik-hidden");
     });
   }
   if (DOM.musikWidget.btnExpand && DOM.musikWidget.chatWindow) {
-    DOM.musikWidget.btnExpand.addEventListener("click", () => {
+    DOM.musikWidget.btnExpand.addEventListener("click", function () {
       DOM.musikWidget.chatWindow.classList.toggle("expanded");
-      const expanded = DOM.musikWidget.chatWindow.classList.contains("expanded");
-      DOM.musikWidget.btnExpand.innerHTML = expanded ? `<i data-lucide="minimize-2"></i>` : `<i data-lucide="maximize-2"></i>`;
+      var expanded = DOM.musikWidget.chatWindow.classList.contains("expanded");
+      DOM.musikWidget.btnExpand.innerHTML = expanded ? '<i data-lucide="minimize-2"></i>' : '<i data-lucide="maximize-2"></i>';
       if (window.lucide) window.lucide.createIcons();
     });
   }
@@ -239,12 +306,14 @@ async function initApp() {
     DOM.musikChat.btnSend.addEventListener("click", triggerChatAction);
   }
   if (DOM.musikChat.input) {
-    DOM.musikChat.input.addEventListener("keydown", (e) => {
+    DOM.musikChat.input.addEventListener("keydown", function (e) {
       if (e.key === "Enter") triggerChatAction();
     });
   }
   if (DOM.musikChat.btnImport) {
-    DOM.musikChat.btnImport.addEventListener("click", () => DOM.musikChat.fileInput?.click());
+    DOM.musikChat.btnImport.addEventListener("click", function () {
+      if (DOM.musikChat.fileInput) DOM.musikChat.fileInput.click();
+    });
   }
   if (DOM.musikChat.fileInput) {
     DOM.musikChat.fileInput.addEventListener("change", handleLocalFileImport);
@@ -266,16 +335,16 @@ async function initApp() {
     DOM.editAlbumModal.btnConfirm.addEventListener("click", confirmEditAlbumChanges);
   }
   if (DOM.editAlbumModal.btnUploadCover && DOM.editAlbumModal.coverFileInput) {
-    DOM.editAlbumModal.btnUploadCover.addEventListener("click", () => {
+    DOM.editAlbumModal.btnUploadCover.addEventListener("click", function () {
       DOM.editAlbumModal.coverFileInput.click();
     });
   }
   if (DOM.editAlbumModal.btnAddSong && DOM.editAlbumModal.addSongFileInput) {
-    DOM.editAlbumModal.btnAddSong.addEventListener("click", () => {
+    DOM.editAlbumModal.btnAddSong.addEventListener("click", function () {
       DOM.editAlbumModal.addSongFileInput.click();
     });
-    DOM.editAlbumModal.addSongFileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
+    DOM.editAlbumModal.addSongFileInput.addEventListener("change", function (e) {
+      var file = e.target.files[0];
       if (file) handleEditAlbumAddLocalSong(file);
     });
   }
@@ -286,15 +355,19 @@ async function initApp() {
   window.renderAlbumCards = renderAlbumCards;
   window.nextRound = nextRound;
   window.openArtistProfile = openArtistProfile;
+  window.openSettings = openSettings;
+  window.closeSettings = closeSettings;
 
   initReviewsSystem(
-    () => (queue.length ? queue[queueIndex] : null),
-    () => {
-      const all = [];
-      const albums = window.albumsFromDB || [];
-      albums.forEach((album) => {
+    function () {
+      return queue.length ? queue[queueIndex] : null;
+    },
+    function () {
+      var all = [];
+      var albums = window.albumsFromDB || [];
+      albums.forEach(function (album) {
         if (album.songs) {
-          album.songs.forEach((song) => {
+          album.songs.forEach(function (song) {
             all.push({
               trackTitle: song.trackTitle,
               artistName: song.artistName || album.artist,
@@ -305,7 +378,7 @@ async function initApp() {
         }
       });
       if (state.importedSongs) {
-        state.importedSongs.forEach((song) => {
+        state.importedSongs.forEach(function (song) {
           all.push({
             trackTitle: song.trackTitle,
             artistName: song.artistName || "Importado",
@@ -315,8 +388,8 @@ async function initApp() {
         });
       }
       window.openPublicProfile = openPublicProfile;
-      window.closePublicProfile = () => {
-        const container = document.getElementById("publicProfileView");
+      window.closePublicProfile = function () {
+        var container = document.getElementById("publicProfileView");
         if (container) {
           container.classList.add("hidden");
           container.innerHTML = "";
@@ -335,29 +408,29 @@ async function initApp() {
 }
 
 window.loadProfileData = async function loadProfileData() {
-  const avgElement = document.getElementById("statProfileAvgRating");
+  var avgElement = document.getElementById("statProfileAvgRating");
   if (!avgElement) {
     console.error("No se encontró #statProfileAvgRating");
     return;
   }
 
   try {
-    const profile = await getUserProfile();
+    var profile = await getUserProfile();
     if (profile.success) {
       document.getElementById("profileName").innerText = profile.user.nombre_usuario;
       document.getElementById("profileEmail").innerText = profile.user.email;
-      const avatar = document.getElementById("profileAvatar");
+      var avatar = document.getElementById("profileAvatar");
       if (profile.user.avatar) {
-        let avatarPath = profile.user.avatar;
+        var avatarPath = profile.user.avatar;
         if (avatarPath.startsWith("/")) avatarPath = avatarPath.substring(1);
-        let base = window.baseUrl.endsWith("/") ? window.baseUrl : window.baseUrl + "/";
+        var base = window.baseUrl.endsWith("/") ? window.baseUrl : window.baseUrl + "/";
         avatar.src = base + avatarPath + "?v=" + Date.now();
       } else {
-        avatar.src = `https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${encodeURIComponent(profile.user.nombre_usuario)}`;
+        avatar.src = "https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=" + encodeURIComponent(profile.user.nombre_usuario);
       }
     }
 
-    const stats = await getUserStats();
+    var stats = await getUserStats();
     if (stats.success) {
       document.getElementById("statProfileReviews").innerText = stats.total_reviews;
       document.getElementById("statProfileFavorites").innerText = stats.total_favorites;
@@ -373,20 +446,20 @@ window.loadProfileData = async function loadProfileData() {
 };
 
 function setupProfileEvents() {
-  const editBtn = document.getElementById("editProfileBtn");
-  const modal = document.getElementById("editProfileModal");
-  const closeBtn = document.getElementById("closeEditProfileModal");
-  const cancelBtn = document.getElementById("cancelProfileModalBtn");
-  const saveBtn = document.getElementById("saveProfileModalBtn");
+  var editBtn = document.getElementById("editProfileBtn");
+  var modal = document.getElementById("editProfileModal");
+  var closeBtn = document.getElementById("closeEditProfileModal");
+  var cancelBtn = document.getElementById("cancelProfileModalBtn");
+  var saveBtn = document.getElementById("saveProfileModalBtn");
 
   if (!editBtn || !modal) {
     console.warn("Elementos del perfil no encontrados aún");
     return;
   }
 
-  editBtn.addEventListener("click", async () => {
+  editBtn.addEventListener("click", async function () {
     try {
-      const profile = await getUserProfile();
+      var profile = await getUserProfile();
       if (profile.success) {
         document.getElementById("modalEditUsername").value = profile.user.nombre_usuario;
         document.getElementById("modalEditEmail").value = profile.user.email;
@@ -400,21 +473,23 @@ function setupProfileEvents() {
     modal.classList.remove("hidden");
   });
 
-  const closeModal = () => modal.classList.add("hidden");
-  closeBtn?.addEventListener("click", closeModal);
-  cancelBtn?.addEventListener("click", closeModal);
-  modal.addEventListener("click", (e) => {
+  var closeModal = function () {
+    modal.classList.add("hidden");
+  };
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+  modal.addEventListener("click", function (e) {
     if (e.target === modal) closeModal();
   });
 
-  saveBtn.addEventListener("click", async () => {
-    const username = document.getElementById("modalEditUsername").value;
-    const email = document.getElementById("modalEditEmail").value;
-    const password = document.getElementById("modalEditPassword").value;
-    const avatarFile = document.getElementById("modalEditAvatar").files[0];
+  saveBtn.addEventListener("click", async function () {
+    var username = document.getElementById("modalEditUsername").value;
+    var email = document.getElementById("modalEditEmail").value;
+    var password = document.getElementById("modalEditPassword").value;
+    var avatarFile = document.getElementById("modalEditAvatar").files[0];
 
     try {
-      const data = await updateUserProfile(username, email, password, avatarFile);
+      var data = await updateUserProfile(username, email, password, avatarFile);
       if (data.success) {
         alert("Perfil actualizado correctamente");
         closeModal();
@@ -429,7 +504,7 @@ function setupProfileEvents() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", function () {
   setupProfileEvents();
   initApp();
 });

@@ -1,39 +1,43 @@
 /* ============================================================
-   AUDIOPHILLE'S - SISTEMA PRINCIPAL (CON PALETA LANDING)
+   AUDIOPHILLE'S - SISTEMA PRINCIPAL (CON VARIABLES CSS)
    ============================================================ */
 
 /* --- VARIABLES Y RESET PREMIUM --- */
 :root {
-    /* ===== PALETA LANDING ===== */
-    --bg-dark: #020204;
-    --bg-panel: #0a0a12;
+    /* ===== PALETA POR DEFECTO (MODO OSCURO) ===== */
+    --bg-primary: #020204;
+    --bg-secondary: #0a0a12;
     --bg-card: #11111d;
     --bg-input: #18182a;
+    --bg-hover: rgba(255, 255, 255, 0.04);
     
-    /* Morado eléctrico del logo */
-    --purple-primary: #9d4edd;
-    --purple-hover: #b5179e;
-    --purple-glow: rgba(157, 78, 221, 0.25);
-    --purple-soft: #2e0854;
-    --purple-dim: rgba(157, 78, 221, 0.08);
+    --accent: #9d4edd;
+    --accent-hover: #b5179e;
+    --accent-glow: rgba(157, 78, 221, 0.25);
+    --accent-dim: rgba(157, 78, 221, 0.08);
     
-    /* Acentos */
-    --blue-accent: #9d4edd;      /* Ahora es morado */
-    --blue-hover: #b5179e;
-    
-    /* Grises y textos */
     --text-primary: #f0edf5;
     --text-secondary: #9a8aa8;
     --text-muted: #6a5a78;
-    --text-inverse: #1a1a2e;
     
-    /* Glassmorphism */
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-bg-hover: rgba(255, 255, 255, 0.06);
     --glass-border: rgba(255, 255, 255, 0.06);
     --glass-border-strong: rgba(157, 78, 221, 0.15);
-    --glass-panel: rgba(10, 10, 16, 0.75);
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-bg-hover: rgba(255, 255, 255, 0.06);
     
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --card-hover-shadow: 0 8px 30px rgba(157, 78, 221, 0.15);
+    
+    --hover-bg: rgba(157, 78, 221, 0.12);
+    --hover-border: rgba(157, 78, 221, 0.3);
+    --focus-border: rgba(157, 78, 221, 0.5);
+    --btn-text: #ffffff;
+    --btn-hover-bg: #b072f5;
+    --btn-active-bg: #7c3aed;
+    
+    --scrollbar-color: rgba(255, 255, 255, 0.12);
+
     /* Transiciones */
     --transition-premium: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     --transition-smooth: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -47,7 +51,6 @@
     font-size: 16px;
 }
 
-/* MEJORA: respetar reducción de movimiento */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -67,7 +70,7 @@
 }
 
 body {
-    background-color: var(--bg-dark);
+    background-color: var(--bg-primary);
     font-family: var(--font-primary);
     color: var(--text-primary);
     overflow: hidden;
@@ -90,7 +93,7 @@ body {
     background:
         radial-gradient(circle at 15% 15%, rgba(26, 10, 46, 0.9) 0%, transparent 45%),
         radial-gradient(circle at 85% 85%, rgba(46, 8, 84, 0.5) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(157, 78, 221, 0.08) 0%, transparent 55%);
+        radial-gradient(circle at 50% 50%, var(--accent-glow) 0%, transparent 55%);
     filter: blur(100px);
     animation: backgroundPulse 20s ease-in-out infinite alternate;
 }
@@ -113,7 +116,7 @@ body {
 .sidebar-left {
     width: var(--sidebar-width);
     height: 100%;
-    background: rgba(2, 2, 4, 0.6);
+    background: var(--bg-secondary);
     border-right: 1px solid var(--glass-border);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
@@ -132,7 +135,7 @@ body {
 }
 
 .brand-logo {
-    color: var(--purple-primary);
+    color: var(--accent);
     width: 28px;
     height: 28px;
     animation: spinSlow 12s linear infinite;
@@ -181,15 +184,15 @@ body {
 }
 
 .menu-item.active {
-    color: var(--purple-primary);
-    background: var(--purple-dim);
+    color: var(--accent);
+    background: var(--accent-dim);
 }
 
 .menu-item:focus-visible,
 .playlist-link:focus-visible,
 .btn-icon:focus-visible,
 button:focus-visible {
-    outline: 2px solid var(--purple-primary);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
     border-radius: 12px;
 }
@@ -282,12 +285,12 @@ button:focus-visible {
 
 .playlist-link:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-hover);
 }
 
 .playlist-link.active {
-    color: var(--purple-primary);
-    background: var(--purple-dim);
+    color: var(--accent);
+    background: var(--accent-dim);
 }
 
 /* --- ÁREA PRINCIPAL --- */
@@ -317,7 +320,7 @@ button:focus-visible {
     background: rgba(2, 2, 4, 0.3);
     backdrop-filter: blur(25px);
     z-index: 10;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .search-container {
@@ -332,9 +335,9 @@ button:focus-visible {
 }
 
 .search-container:focus-within {
-    border-color: var(--purple-primary);
+    border-color: var(--accent);
     background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 0 20px var(--purple-glow);
+    box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .search-icon {
@@ -347,7 +350,7 @@ button:focus-visible {
 #globalSearch {
     background: none;
     border: none;
-    color: white;
+    color: var(--text-primary);
     font-size: 0.9375rem;
     width: 100%;
     outline: none;
@@ -383,7 +386,7 @@ button:focus-visible {
 }
 
 .album-card {
-    background: var(--glass-bg);
+    background: var(--bg-card);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 14px;
@@ -398,8 +401,8 @@ button:focus-visible {
 .album-card:hover {
     transform: translateY(-6px) scale(1.02);
     background: var(--glass-bg-hover);
-    border-color: var(--glass-border-strong);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    border-color: var(--hover-border);
+    box-shadow: var(--card-hover-shadow);
 }
 
 .album-card:active {
@@ -479,8 +482,8 @@ button:focus-visible {
     position: absolute;
     bottom: 12px;
     right: 12px;
-    background: var(--purple-primary);
-    color: white;
+    background: var(--accent);
+    color: var(--btn-text);
     width: 42px;
     height: 42px;
     border-radius: 50%;
@@ -490,7 +493,7 @@ button:focus-visible {
     opacity: 0;
     transform: translateY(8px) scale(0.8);
     transition: var(--transition-premium);
-    box-shadow: 0 4px 12px var(--purple-glow);
+    box-shadow: 0 4px 12px var(--accent-glow);
 }
 
 .play-hint i {
@@ -542,7 +545,7 @@ button:focus-visible {
 
 .back-btn:hover {
     background: var(--glass-bg-hover);
-    border-color: var(--glass-border-strong);
+    border-color: var(--hover-border);
     transform: translateX(-4px);
 }
 
@@ -591,7 +594,7 @@ button:focus-visible {
 
 .album-header-text p {
     font-size: 1.125rem;
-    color: var(--purple-primary);
+    color: var(--accent);
     font-weight: 600;
 }
 
@@ -634,8 +637,8 @@ button:focus-visible {
 }
 
 .track-row.active-track {
-    background: var(--purple-dim);
-    border-color: var(--glass-border-strong);
+    background: var(--accent-dim);
+    border-color: var(--hover-border);
 }
 
 .track-number {
@@ -645,7 +648,7 @@ button:focus-visible {
 }
 
 .track-row.active-track .track-number {
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 .track-title {
@@ -658,7 +661,7 @@ button:focus-visible {
 }
 
 .track-row.active-track .track-title {
-    color: var(--purple-primary);
+    color: var(--accent);
     font-weight: 600;
 }
 
@@ -692,19 +695,19 @@ button:focus-visible {
 
 .btn-track-actions:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-hover);
 }
 
 /* --- MENÚ CONTEXTUAL --- */
 .context-menu {
     position: absolute;
-    background: rgba(20, 20, 28, 0.85);
+    background: var(--bg-secondary);
     backdrop-filter: blur(25px);
     border: 1px solid var(--glass-border);
     border-radius: 14px;
     padding: 8px;
     width: 220px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px var(--shadow-color);
     z-index: 200;
     transform-origin: top right;
     animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -733,8 +736,8 @@ button:focus-visible {
 }
 
 .context-option:hover {
-    background: var(--purple-primary);
-    color: white;
+    background: var(--accent);
+    color: var(--btn-text);
 }
 
 .context-divider {
@@ -768,11 +771,11 @@ button:focus-visible {
     transform: translateX(-50%);
     width: calc(100% - var(--sidebar-width) - 80px);
     max-width: 680px;
-    background: rgba(10, 10, 15, 0.7);
+    background: var(--bg-secondary);
     backdrop-filter: blur(30px);
     border: 1px solid var(--glass-border);
     border-radius: 18px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+    box-shadow: 0 12px 40px var(--shadow-color);
     cursor: pointer;
     z-index: 90;
     overflow: hidden;
@@ -780,8 +783,8 @@ button:focus-visible {
 }
 
 .mini-player:hover {
-    background: rgba(18, 18, 26, 0.8);
-    border-color: var(--glass-border-strong);
+    background: var(--bg-secondary);
+    border-color: var(--hover-border);
     transform: translateX(-50%) translateY(-2px);
 }
 
@@ -832,8 +835,8 @@ button:focus-visible {
 }
 
 .mini-controls button {
-    background: white;
-    color: black;
+    background: var(--btn-text);
+    color: var(--bg-primary);
     border: none;
     width: 38px;
     height: 38px;
@@ -853,16 +856,19 @@ button:focus-visible {
 .mini-progress-bar {
     width: 100%;
     height: 3px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--glass-border);
 }
 
 .mini-progress-fill {
     height: 100%;
     width: 0%;
-    background: var(--purple-primary);
+    background: var(--accent);
 }
 
-/* --- REPRODUCTOR COMPLETO --- */
+/* ============================================================
+   REPRODUCTOR COMPLETO (con Volumen en el Ecualizador)
+   ============================================================ */
+
 .player-overlay {
     position: fixed;
     top: 0;
@@ -893,7 +899,7 @@ button:focus-visible {
 .player-top-bar button {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    color: white;
+    color: var(--text-primary);
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -921,7 +927,7 @@ button:focus-visible {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 64px;
+    gap: 48px;
     flex: 1;
     width: 100%;
     max-width: 1200px;
@@ -983,7 +989,7 @@ button:focus-visible {
 
 .track-metadata p {
     font-size: 1.125rem;
-    color: var(--purple-primary);
+    color: var(--accent);
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
@@ -1032,7 +1038,7 @@ button:focus-visible {
     position: absolute;
     width: 100%;
     height: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--glass-border);
     border-radius: 2px;
     overflow: hidden;
     pointer-events: none;
@@ -1042,7 +1048,7 @@ button:focus-visible {
 .progress-bar-fill {
     height: 100%;
     width: 0%;
-    background: var(--purple-primary);
+    background: var(--accent);
     border-radius: 2px;
 }
 
@@ -1070,8 +1076,8 @@ button:focus-visible {
     height: 12px;
     width: 12px;
     border-radius: 50%;
-    background: white;
-    box-shadow: 0 0 10px var(--purple-glow);
+    background: var(--btn-text);
+    box-shadow: 0 0 10px var(--accent-glow);
     opacity: 0;
     transform: scale(0.6);
     transition: transform 0.15s ease, opacity 0.15s ease;
@@ -1119,12 +1125,12 @@ button:focus-visible {
 
 .btn-icon:hover {
     color: var(--text-primary);
-    background: rgba(255,255,255,0.05);
+    background: var(--bg-hover);
 }
 
 .btn-icon.active-control {
-    color: var(--purple-primary) !important;
-    filter: drop-shadow(0 0 8px var(--purple-glow));
+    color: var(--accent) !important;
+    filter: drop-shadow(0 0 8px var(--accent-glow));
 }
 
 .btn-icon:active,
@@ -1136,8 +1142,8 @@ button:focus-visible {
 }
 
 .btn-play-large {
-    background: white;
-    color: black;
+    background: var(--btn-text);
+    color: var(--bg-primary);
     border: none;
     width: 64px;
     height: 64px;
@@ -1161,61 +1167,19 @@ button:focus-visible {
     height: 24px;
 }
 
-.volume-group {
-    margin-top: 36px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: fit-content;
-    align-self: center;
-}
+/* ============================================================
+   PANELES LATERALES (COLA y ECUALLIZADOR)
+   ============================================================ */
 
-.vol-icon {
-    color: var(--text-secondary);
-    width: 18px;
-    height: 18px;
-}
-
-.vol-slider-wrapper {
-    width: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: var(--transition-premium);
-}
-
-.volume-group:hover .vol-slider-wrapper {
-    width: 100px;
-    opacity: 1;
-}
-
-.vol-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 4px;
-    border-radius: 2px;
-    background: rgba(255,255,255,0.15);
-    outline: none;
-    cursor: pointer;
-}
-
-.vol-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--purple-primary);
-}
-
-/* --- PANELES LATERALES (COLA, EQ) --- */
 .queue-sidebar {
     width: 280px;
-    height: 380px;
+    max-height: 480px;
+    height: auto;
     display: flex;
     flex-direction: column;
     transition: var(--transition-premium);
     transform-origin: right center;
+    overflow: hidden;
 }
 
 .queue-sidebar.collapsed {
@@ -1223,10 +1187,12 @@ button:focus-visible {
     opacity: 0;
     margin-left: -64px;
     pointer-events: none;
+    max-height: 0;
+    padding: 0;
 }
 
 .queue-panel {
-    background: var(--glass-bg);
+    background: var(--bg-card);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 20px;
@@ -1234,6 +1200,7 @@ button:focus-visible {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    overflow-y: auto;
 }
 
 .queue-panel h3 {
@@ -1261,7 +1228,7 @@ button:focus-visible {
     align-items: flex-start;
     gap: 2px;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.01);
+    background: var(--bg-card);
     border: 1px solid transparent;
     border-radius: 10px;
     cursor: pointer;
@@ -1273,14 +1240,14 @@ button:focus-visible {
 }
 
 .queue-item.queue-active {
-    background: var(--purple-dim);
-    border-color: var(--glass-border-strong);
+    background: var(--accent-dim);
+    border-color: var(--hover-border);
 }
 
 .queue-title {
     font-size: 0.875rem;
     font-weight: 600;
-    color: white;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1288,7 +1255,7 @@ button:focus-visible {
 }
 
 .queue-item.queue-active .queue-title {
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 .queue-artist {
@@ -1300,7 +1267,175 @@ button:focus-visible {
     width: 100%;
 }
 
-/* --- RESPONSIVIDAD --- */
+/* --- Ecualizador (con Volumen General incluido) --- */
+
+.eq-panel-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 32px;
+}
+
+.eq-panel-meta .eq-title {
+    margin: 0;
+    line-height: 1.2;
+}
+
+.btn-eq-reset {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 12px;
+    transition: var(--transition-fast);
+    outline: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    align-self: center;
+}
+
+.btn-eq-reset:hover {
+    background: var(--accent-dim);
+    border-color: var(--hover-border);
+    color: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.eq-panel-row {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: var(--transition-fast);
+}
+
+.eq-panel-row:hover {
+    background: var(--bg-hover);
+    border-color: var(--hover-border);
+}
+
+.eq-panel-label-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.eq-label-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.eq-value-text {
+    font-size: 11px;
+    font-family: var(--font-mono, monospace);
+    color: var(--text-secondary);
+    background: var(--bg-input);
+    padding: 1px 6px;
+    border-radius: 5px;
+}
+
+.eq-slider-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--glass-border);
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.eq-slider-input:hover {
+    background: var(--hover-border);
+}
+
+.eq-slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    border: 2px solid var(--bg-primary);
+}
+
+.eq-slider-input::-webkit-slider-thumb:hover {
+    transform: scale(1.25);
+}
+
+#eqBass::-webkit-slider-thumb {
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+#eqVocals::-webkit-slider-thumb {
+    background: #ec4899;
+    box-shadow: 0 0 12px rgba(236, 72, 153, 0.6);
+}
+
+#eqTreble::-webkit-slider-thumb {
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.eq-sliders-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: flex-start;
+    padding: 4px 0;
+    width: 100%;
+    overflow-y: auto;
+}
+
+/* ============================================================
+   MASTER VOLUME DENTRO DEL ECUALLIZADOR
+   ============================================================ */
+
+.master-volume-row {
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 16px;
+    margin-bottom: 12px;
+}
+
+.master-volume-slider::-webkit-slider-thumb {
+    width: 18px !important;
+    height: 18px !important;
+    background: var(--btn-text) !important;
+    box-shadow: 0 0 20px var(--accent-glow), 0 0 8px var(--accent) !important;
+}
+
+.master-volume-slider::-moz-range-thumb {
+    width: 18px !important;
+    height: 18px !important;
+    background: var(--btn-text) !important;
+    box-shadow: 0 0 20px var(--accent-glow), 0 0 8px var(--accent) !important;
+}
+
+.master-volume-slider::-webkit-slider-runnable-track {
+    height: 6px !important;
+}
+.master-volume-slider::-moz-range-track {
+    height: 6px !important;
+}
+
+/* ============================================================
+   RESPONSIVIDAD DEL REPRODUCTOR
+   ============================================================ */
+
 @media (max-width: 990px) {
     .player-layout {
         flex-direction: column;
@@ -1326,6 +1461,30 @@ button:focus-visible {
     }
 }
 
+@media (max-width: 480px) {
+    .player-overlay {
+        padding: 20px 16px;
+    }
+    .track-metadata h1 {
+        font-size: 1.375rem;
+    }
+    .track-metadata p {
+        font-size: 0.9375rem;
+    }
+    .main-cover-wrapper {
+        width: 200px;
+        height: 200px;
+    }
+    .main-controls {
+        margin-top: 16px;
+    }
+    .btn-play-large {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+/* --- RESPONSIVIDAD GENERAL --- */
 @media (max-width: 768px) {
     :root {
         --sidebar-width: 70px;
@@ -1414,26 +1573,6 @@ button:focus-visible {
     .track-duration {
         font-size: 0.75rem;
     }
-    .player-overlay {
-        padding: 20px 16px;
-    }
-    .track-metadata h1 {
-        font-size: 1.375rem;
-    }
-    .track-metadata p {
-        font-size: 0.9375rem;
-    }
-    .main-cover-wrapper {
-        width: 200px;
-        height: 200px;
-    }
-    .main-controls {
-        margin-top: 16px;
-    }
-    .btn-play-large {
-        width: 56px;
-        height: 56px;
-    }
     .musik-chat-window {
         width: calc(100vw - 32px);
         height: 400px;
@@ -1467,7 +1606,7 @@ button:focus-visible {
     width: 100%;
     max-width: 420px;
     padding: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 40px var(--shadow-color);
     animation: scaleUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -1522,7 +1661,7 @@ button:focus-visible {
 }
 
 .modal-body input:focus {
-    border-color: var(--purple-primary);
+    border-color: var(--accent);
 }
 
 .modal-footer {
@@ -1544,12 +1683,12 @@ button:focus-visible {
 }
 
 .btn-modal-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--bg-hover);
 }
 
 .btn-modal-primary {
-    background-color: var(--purple-primary);
-    color: #ffffff;
+    background-color: var(--accent);
+    color: var(--btn-text);
     border: none;
     font-size: 14px;
     font-weight: 500;
@@ -1598,13 +1737,13 @@ button:focus-visible {
 }
 
 .sidebar-navigation-item.active, .playlist-link.active {
-    background-color: var(--purple-dim);
-    color: var(--purple-primary);
+    background-color: var(--accent-dim);
+    color: var(--accent);
     font-weight: 600;
 }
 
 .sidebar-navigation-item.active i, .playlist-link.active i {
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 #playlistsContainer {
@@ -1628,26 +1767,26 @@ button:focus-visible {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border-strong);
+    border: 1px solid var(--hover-border);
     padding: 12px 20px;
     border-radius: 30px;
-    color: #fff;
+    color: var(--text-primary);
     cursor: pointer;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px 0 var(--shadow-color);
     transition: all 0.3s ease;
 }
 
 .musik-trigger-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--glass-bg-hover);
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px 0 var(--purple-glow);
+    box-shadow: 0 12px 40px 0 var(--accent-glow);
 }
 
 .musik-icon-spark, .musik-btn-icon {
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 .musik-btn-text {
@@ -1661,15 +1800,15 @@ button:focus-visible {
     right: 0;
     width: 340px;
     height: 450px;
-    background: rgba(15, 15, 20, 0.75);
+    background: var(--bg-secondary);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
-    border: 1px solid var(--glass-border-strong);
+    border: 1px solid var(--hover-border);
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 15px 45px var(--shadow-color);
     transition: opacity 0.3s ease, transform 0.3s ease;
     transform-origin: bottom right;
 }
@@ -1681,7 +1820,7 @@ button:focus-visible {
 }
 
 .musik-chat-header {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--glass-bg);
     padding: 15px;
     border-bottom: 1px solid var(--glass-border);
     display: flex;
@@ -1697,7 +1836,7 @@ button:focus-visible {
 
 .musik-avatar-info h4 {
     margin: 0;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 15px;
 }
 
@@ -1710,13 +1849,13 @@ button:focus-visible {
 .musik-chat-header button {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: color 0.2s;
 }
 
 .musik-chat-header button:hover {
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .musik-chat-messages {
@@ -1733,7 +1872,7 @@ button:focus-visible {
 }
 
 .musik-chat-messages::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--glass-border);
     border-radius: 2px;
 }
 
@@ -1746,22 +1885,22 @@ button:focus-visible {
 }
 
 .msg-bot {
-    background: rgba(255, 255, 255, 0.05);
-    color: #e4e4e7;
+    background: var(--glass-bg);
+    color: var(--text-primary);
     align-self: flex-start;
     border-bottom-left-radius: 4px;
 }
 
 .msg-user {
-    background: var(--purple-primary);
-    color: #fff;
+    background: var(--accent);
+    color: var(--btn-text);
     align-self: flex-end;
     border-bottom-right-radius: 4px;
 }
 
 .musik-chat-input-area {
     padding: 12px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--bg-primary);
     border-top: 1px solid var(--glass-border);
     display: flex;
     gap: 8px;
@@ -1769,23 +1908,23 @@ button:focus-visible {
 
 #musikInput {
     flex: 1;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     padding: 10px 14px;
     border-radius: 20px;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 13px;
     outline: none;
 }
 
 #musikInput:focus {
-    border-color: var(--purple-primary);
+    border-color: var(--accent);
 }
 
 #btnMusikSend {
-    background: var(--purple-primary);
+    background: var(--accent);
     border: none;
-    color: #fff;
+    color: var(--btn-text);
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -1797,14 +1936,14 @@ button:focus-visible {
 }
 
 #btnMusikSend:hover {
-    background: var(--purple-hover);
+    background: var(--accent-hover);
 }
 
 /* ==========================================================================
    INTERFAZ DE ÁLBUMES CRUD Y ECUALIZADOR
    ========================================================================== */
 .btn-action-edit, .btn-action-delete {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-primary);
     display: inline-flex;
@@ -1819,10 +1958,10 @@ button:focus-visible {
 }
 
 .btn-action-edit:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: var(--glass-border-strong);
+    background: var(--glass-bg-hover);
+    border-color: var(--hover-border);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .btn-action-delete {
@@ -1836,121 +1975,6 @@ button:focus-visible {
     border-color: rgba(255, 69, 58, 0.45);
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(255, 69, 58, 0.25);
-}
-
-.eq-panel-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-}
-
-.eq-panel-row {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--glass-border);
-    border-radius: 14px;
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    transition: var(--transition-fast);
-}
-
-.eq-panel-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--glass-border-strong);
-}
-
-.eq-panel-label-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.eq-label-text {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.eq-value-text {
-    font-size: 11px;
-    font-family: var(--font-mono, monospace);
-    color: var(--text-secondary);
-    background: rgba(0, 0, 0, 0.4);
-    padding: 1px 6px;
-    border-radius: 5px;
-}
-
-.eq-slider-input {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 5px;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.1);
-    outline: none;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.eq-slider-input:hover {
-    background: rgba(255, 255, 255, 0.16);
-}
-
-.eq-slider-input::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-    border: 2px solid #1a1a24;
-}
-
-.eq-slider-input::-webkit-slider-thumb:hover {
-    transform: scale(1.25);
-}
-
-#eqBass::-webkit-slider-thumb {
-    background: var(--purple-primary);
-    box-shadow: 0 0 12px var(--purple-glow);
-}
-
-#eqVocals::-webkit-slider-thumb {
-    background: #ec4899;
-    box-shadow: 0 0 12px rgba(236, 72, 153, 0.6);
-}
-
-#eqTreble::-webkit-slider-thumb {
-    background: var(--purple-primary);
-    box-shadow: 0 0 12px var(--purple-glow);
-}
-
-.btn-eq-reset {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    color: var(--purple-primary);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 4px 10px;
-    border-radius: 12px;
-    transition: var(--transition-fast);
-    outline: none;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.btn-eq-reset:hover {
-    background: var(--purple-dim);
-    border-color: var(--glass-border-strong);
-    color: var(--purple-hover);
-    transform: translateY(-1px);
 }
 
 /* ==========================================================================
@@ -1990,8 +2014,8 @@ button:focus-visible {
 }
 
 .btn-edit-review:hover, .btn-edit-integrated-review:hover {
-    color: var(--purple-primary) !important;
-    background: var(--purple-dim) !important;
+    color: var(--accent) !important;
+    background: var(--accent-dim) !important;
     transform: scale(1.1);
 }
 
@@ -2008,8 +2032,8 @@ button:focus-visible {
 }
 
 #reviewTextInput:focus {
-    border-color: var(--purple-primary) !important;
-    background-color: rgba(0,0,0,0.5) !important;
+    border-color: var(--accent) !important;
+    background-color: var(--bg-input) !important;
 }
 
 #integratedRatingStars i, #editReviewStars i {
@@ -2027,13 +2051,13 @@ button:focus-visible {
 }
 
 #diarySongSelector:focus, #integratedReviewText:focus, #diarySearchFilter:focus, #editReviewTextarea:focus {
-    border-color: var(--purple-primary) !important;
-    background-color: rgba(0,0,0,0.5) !important;
+    border-color: var(--accent) !important;
+    background-color: var(--bg-input) !important;
 }
 
 #btnDiarySortRecent:hover, #btnDiarySortRating:hover {
-    background: var(--purple-dim) !important;
-    color: #fff !important;
+    background: var(--accent-dim) !important;
+    color: var(--text-primary) !important;
 }
 
 /* ==========================================================================
@@ -2053,10 +2077,10 @@ button:focus-visible {
 .diary-badge {
     font-size: 13px;
     color: var(--text-secondary);
-    background: var(--purple-dim);
+    background: var(--accent-dim);
     padding: 6px 14px;
     border-radius: 20px;
-    border: 1px solid var(--glass-border-strong);
+    border: 1px solid var(--hover-border);
     font-weight: 600;
 }
 
@@ -2086,7 +2110,7 @@ button:focus-visible {
 .diary-stats-card {
     display: flex;
     gap: 20px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-card);
     padding: 20px;
     border-radius: 20px;
     border: 1px solid var(--glass-border);
@@ -2108,7 +2132,7 @@ button:focus-visible {
 }
 
 .diary-stat-number.blue-accent {
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 .diary-stat-number.gold-accent {
@@ -2157,7 +2181,7 @@ button:focus-visible {
 .diary-list-title {
     font-size: 18px;
     font-weight: 700;
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .diary-sort-group {
@@ -2178,9 +2202,9 @@ button:focus-visible {
 }
 
 .diary-sort-btn.active {
-    background: var(--purple-dim);
-    border: 1px solid var(--glass-border-strong);
-    color: white;
+    background: var(--accent-dim);
+    border: 1px solid var(--hover-border);
+    color: var(--text-primary);
 }
 
 .diary-filter-search-row {
@@ -2206,18 +2230,18 @@ button:focus-visible {
 
 .diary-search-input {
     width: 100%;
-    background: rgba(255,255,255,0.03);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 8px 12px 8px 34px;
-    color: white;
+    color: var(--text-primary);
     font-size: 12.5px;
     outline: none;
     transition: all 0.2s;
 }
 
 .diary-filter-rewatched-btn {
-    background: rgba(255,255,255,0.02);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-secondary);
     padding: 8px 14px;
@@ -2238,7 +2262,7 @@ button:focus-visible {
 }
 
 .diary-composer-box {
-    background: rgba(4, 4, 8, 0.4);
+    background: var(--bg-secondary);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     border: 1px solid var(--glass-border);
@@ -2247,7 +2271,7 @@ button:focus-visible {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px var(--shadow-color);
 }
 
 .diary-composer-title {
@@ -2272,7 +2296,7 @@ button:focus-visible {
 .diary-field-label {
     font-size: 11px;
     text-transform: uppercase;
-    color: #a0a0a8;
+    color: var(--text-secondary);
     font-weight: 700;
     letter-spacing: 0.5px;
 }
@@ -2283,7 +2307,7 @@ button:focus-visible {
     border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 12px;
-    color: white;
+    color: var(--text-primary);
     font-size: 14px;
     outline: none;
     cursor: pointer;
@@ -2293,7 +2317,7 @@ button:focus-visible {
 .diary-current-playing-btn {
     background: none;
     border: none;
-    color: var(--purple-primary);
+    color: var(--accent);
     font-size: 11px;
     font-weight: 600;
     text-align: left;
@@ -2311,7 +2335,7 @@ button:focus-visible {
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    background: rgba(0,0,0,0.2);
+    background: var(--bg-input);
     padding: 8px 12px;
     border-radius: 12px;
     border: 1px solid var(--glass-border);
@@ -2326,11 +2350,11 @@ button:focus-visible {
 }
 
 .diary-rewatch-toggle-btn {
-    background: rgba(255,255,255,0.04);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 6px 12px;
-    color: #a0a0a8;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -2343,11 +2367,11 @@ button:focus-visible {
 .diary-textarea-input {
     width: 100%;
     height: 130px;
-    background: rgba(0,0,0,0.3);
+    background: var(--bg-input);
     border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 12px;
-    color: white;
+    color: var(--text-primary);
     font-size: 13.5px;
     outline: none;
     resize: none;
@@ -2388,16 +2412,6 @@ button:focus-visible {
     transition: all 0.2s;
 }
 
-.eq-sliders-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    justify-content: center;
-    padding: 10px 0;
-    width: 100%;
-}
-
 .queue-panel-scrollable {
     overflow-y: auto;
 }
@@ -2406,7 +2420,7 @@ button:focus-visible {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background: rgba(255,255,255,0.02);
+    background: var(--bg-card);
     padding: 12px;
     border-radius: 12px;
     border: 1px solid var(--glass-border);
@@ -2437,11 +2451,11 @@ button:focus-visible {
 .sidebar-review-textarea {
     width: 100%;
     height: 64px;
-    background: rgba(0,0,0,0.3);
+    background: var(--bg-input);
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     padding: 8px;
-    color: white;
+    color: var(--text-primary);
     font-size: 13px;
     outline: none;
     resize: none;
@@ -2460,7 +2474,7 @@ button:focus-visible {
 
 .sidebar-reviews-tabs {
     display: flex;
-    border-bottom: 1px solid rgba(255,255,100,0.05);
+    border-bottom: 1px solid var(--glass-border);
     padding-bottom: 2px;
     margin-top: 4px;
 }
@@ -2476,9 +2490,9 @@ button:focus-visible {
 }
 
 .sidebar-reviews-tab-btn.active {
-    color: var(--purple-primary);
+    color: var(--accent);
     font-weight: 700;
-    border-bottom: 2px solid var(--purple-primary);
+    border-bottom: 2px solid var(--accent);
 }
 
 .sidebar-reviews-tab-btn:not(.active) {
@@ -2514,7 +2528,7 @@ button:focus-visible {
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     padding: 10px 14px;
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .modal-input-row {
@@ -2529,7 +2543,7 @@ button:focus-visible {
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     padding: 10px 12px;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 13px;
 }
 
@@ -2546,7 +2560,7 @@ button:focus-visible {
     margin-top: 15px !important;
     display: block !important;
     font-weight: bold;
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .songs-container-box {
@@ -2554,7 +2568,7 @@ button:focus-visible {
     flex-direction: column;
     gap: 8px;
     margin-top: 8px;
-    background: rgba(0,0,0,0.2);
+    background: var(--bg-input);
     padding: 8px;
     border-radius: 8px;
     min-height: 40px;
@@ -2604,7 +2618,7 @@ button:focus-visible {
 
 .edit-review-header-icon {
     width: 18px;
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 .edit-review-body {
@@ -2617,7 +2631,7 @@ button:focus-visible {
     display: flex;
     gap: 12px;
     align-items: center;
-    background: rgba(255,255,255,0.02);
+    background: var(--bg-card);
     padding: 12px;
     border-radius: 12px;
     border: 1px solid var(--glass-border);
@@ -2633,7 +2647,7 @@ button:focus-visible {
 .edit-review-track-title {
     font-size: 14px;
     font-weight: 700;
-    color: white;
+    color: var(--text-primary);
 }
 
 .edit-review-track-artist {
@@ -2650,7 +2664,7 @@ button:focus-visible {
 .edit-review-label {
     font-size: 11px;
     text-transform: uppercase;
-    color: #a0a0a8;
+    color: var(--text-secondary);
     font-weight: 700;
     letter-spacing: 0.5px;
 }
@@ -2660,7 +2674,7 @@ button:focus-visible {
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    background: rgba(0,0,0,0.2);
+    background: var(--bg-input);
     padding: 8px 12px;
     border-radius: 12px;
     border: 1px solid var(--glass-border);
@@ -2680,11 +2694,11 @@ button:focus-visible {
 }
 
 .edit-review-rewatch-btn {
-    background: rgba(255,255,255,0.04);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 6px 12px;
-    color: #a0a0a8;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -2697,11 +2711,11 @@ button:focus-visible {
 .edit-review-textarea {
     width: 100%;
     height: 120px;
-    background: rgba(0,0,0,0.3);
+    background: var(--bg-input);
     border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 12px;
-    color: white;
+    color: var(--text-primary);
     font-size: 13.5px;
     outline: none;
     resize: none;
@@ -2724,9 +2738,9 @@ button:focus-visible {
 }
 
 .musik-import-btn {
-    background: rgba(255,255,255,0.05);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    color: #fff;
+    color: var(--text-primary);
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -2738,13 +2752,13 @@ button:focus-visible {
 }
 
 .musik-import-btn:hover {
-    background: var(--purple-dim);
-    border-color: var(--glass-border-strong);
+    background: var(--accent-dim);
+    border-color: var(--hover-border);
 }
 
 .musik-import-btn-icon {
     width: 16px;
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 .edit-review-stars-container i {
@@ -2778,9 +2792,9 @@ button:focus-visible {
 }
 
 .tag-album {
-    background: var(--purple-dim);
-    color: var(--purple-primary);
-    border: 1px solid var(--glass-border-strong);
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid var(--hover-border);
 }
 
 .tag-playlist {
@@ -2790,11 +2804,11 @@ button:focus-visible {
 }
 
 .play-hint-purple {
-    background: var(--purple-primary) !important;
+    background: var(--accent) !important;
 }
 
 .playlist-inline-adder {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-card);
     border: 1px dashed var(--glass-border);
     border-radius: 16px;
     padding: 20px;
@@ -2807,8 +2821,8 @@ button:focus-visible {
 }
 
 .playlist-inline-adder:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: var(--glass-border-strong);
+    background: var(--bg-hover);
+    border-color: var(--hover-border);
 }
 
 .adder-header {
@@ -2820,7 +2834,7 @@ button:focus-visible {
 .adder-icon {
     width: 24px;
     height: 24px;
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 .adder-header h4 {
@@ -2842,7 +2856,7 @@ button:focus-visible {
 
 .adder-select {
     flex: 1;
-    background: rgba(4, 4, 8, 0.6);
+    background: var(--bg-input);
     border: 1px solid var(--glass-border);
     border-radius: 10px;
     padding: 10px 14px;
@@ -2854,13 +2868,13 @@ button:focus-visible {
 }
 
 .adder-select:focus {
-    border-color: var(--purple-primary);
-    box-shadow: 0 0 0 2px var(--purple-glow);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .btn-adder-add {
-    background: var(--purple-primary);
-    color: white;
+    background: var(--accent);
+    color: var(--btn-text);
     border: none;
     border-radius: 10px;
     padding: 10px 18px;
@@ -2874,7 +2888,7 @@ button:focus-visible {
 }
 
 .btn-adder-add:hover:not(:disabled) {
-    background: var(--purple-hover);
+    background: var(--accent-hover);
     transform: translateY(-1px);
 }
 
@@ -2986,7 +3000,7 @@ button:focus-visible {
 
 .chat-expand-btn:hover,
 .chat-minimize-btn:hover {
-    color: #fff;
+    color: var(--text-primary);
 }
 
 /* Ajuste de iconos pequeños */
@@ -3020,12 +3034,12 @@ button:focus-visible {
     max-width: 800px;
     width: 90%;
     margin: 30px auto;
-    background: rgba(30, 20, 45, 0.65);
+    background: var(--bg-secondary);
     backdrop-filter: blur(12px);
     border-radius: 32px;
-    border: 1px solid var(--glass-border-strong);
+    border: 1px solid var(--hover-border);
     padding: 2rem 1.8rem;
-    box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 20px 35px var(--shadow-color);
 }
 
 .game-header {
@@ -3042,7 +3056,7 @@ button:focus-visible {
 .game-header h2 {
     font-size: 1.9rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #c084fc, var(--purple-primary));
+    background: linear-gradient(135deg, #c084fc, var(--accent));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -3052,10 +3066,10 @@ button:focus-visible {
 .game-score {
     font-size: 1.3rem;
     font-weight: bold;
-    background: var(--purple-dim);
+    background: var(--accent-dim);
     padding: 0.3rem 1.2rem;
     border-radius: 60px;
-    border: 1px solid var(--glass-border-strong);
+    border: 1px solid var(--hover-border);
     color: #e9d5ff;
 }
 
@@ -3074,7 +3088,7 @@ button:focus-visible {
     border-radius: 24px;
     filter: blur(10px);
     transition: filter 0.3s, transform 0.3s;
-    box-shadow: 0 12px 25px -5px rgba(0,0,0,0.5);
+    box-shadow: 0 12px 25px -5px var(--shadow-color);
 }
 
 .game-cover-blur:hover {
@@ -3088,7 +3102,7 @@ button:focus-visible {
     justify-content: center;
     align-items: center;
     gap: 10px;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--bg-input);
     padding: 8px 18px;
     border-radius: 60px;
     width: fit-content;
@@ -3134,7 +3148,7 @@ button:focus-visible {
 }
 
 .game-option-btn {
-    background: rgba(20, 15, 35, 0.9);
+    background: var(--bg-card);
     border: 1px solid rgba(160, 120, 255, 0.4);
     border-radius: 60px;
     padding: 0.8rem 1.5rem;
@@ -3142,7 +3156,7 @@ button:focus-visible {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: #f0f0ff;
+    color: var(--text-primary);
     backdrop-filter: blur(4px);
     width: 80%;
     max-width: 320px;
@@ -3151,7 +3165,7 @@ button:focus-visible {
 }
 
 .game-option-btn:hover:not(:disabled) {
-    background: rgba(120, 80, 200, 0.6);
+    background: var(--accent-dim);
     transform: scale(1.02);
     border-color: #c084fc;
 }
@@ -3190,7 +3204,7 @@ button:focus-visible {
 }
 
 .game-next-btn {
-    background: linear-gradient(135deg, var(--purple-primary), var(--purple-hover));
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
     border: none;
     border-radius: 60px;
     padding: 0.7rem 2rem;
@@ -3201,14 +3215,14 @@ button:focus-visible {
     align-items: center;
     gap: 10px;
     transition: all 0.2s;
-    color: white;
-    box-shadow: 0 4px 12px var(--purple-glow);
+    color: var(--btn-text);
+    box-shadow: 0 4px 12px var(--accent-glow);
 }
 
 .game-next-btn:hover {
     transform: scale(1.02);
-    background: linear-gradient(135deg, var(--purple-hover), #5b21b6);
-    box-shadow: 0 6px 16px var(--purple-glow);
+    background: linear-gradient(135deg, var(--accent-hover), #5b21b6);
+    box-shadow: 0 6px 16px var(--accent-glow);
 }
 
 .game-next-btn i {
@@ -3223,7 +3237,7 @@ button:focus-visible {
     font-weight: 500;
     padding: 0.6rem;
     border-radius: 60px;
-    background: rgba(0,0,0,0.3);
+    background: var(--bg-input);
 }
 
 .game-message.correct-msg {
@@ -3283,7 +3297,7 @@ button:focus-visible {
     height: 100px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid var(--purple-primary);
+    border: 2px solid var(--accent);
 }
 
 .profile-header h1 {
@@ -3307,7 +3321,7 @@ button:focus-visible {
 }
 
 .stat-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-card);
     border-radius: 20px;
     padding: 1rem;
     text-align: center;
@@ -3316,7 +3330,7 @@ button:focus-visible {
 .stat-number {
     font-size: 2rem;
     font-weight: 800;
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 .stat-label {
@@ -3325,7 +3339,7 @@ button:focus-visible {
 }
 
 .edit-profile-form {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-card);
     border-radius: 20px;
     padding: 1.5rem;
     margin-top: 1rem;
@@ -3351,11 +3365,11 @@ button:focus-visible {
 
 .modal-input {
     width: 100%;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--bg-input);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 10px;
-    color: white;
+    color: var(--text-primary);
 }
 
 .form-helper {
@@ -3366,11 +3380,11 @@ button:focus-visible {
 }
 
 .file-input {
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--bg-input);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 8px;
-    color: white;
+    color: var(--text-primary);
     width: 100%;
 }
 
@@ -3414,8 +3428,8 @@ button:focus-visible {
 }
 
 .edit-profile-btn {
-    background: var(--purple-primary);
-    color: white;
+    background: var(--accent);
+    color: var(--btn-text);
     border: none;
     padding: 10px 24px;
     border-radius: 30px;
@@ -3426,9 +3440,9 @@ button:focus-visible {
 }
 
 .edit-profile-btn:hover {
-    background: var(--purple-hover);
+    background: var(--accent-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px var(--purple-glow);
+    box-shadow: 0 4px 12px var(--accent-glow);
 }
 
 /* Estado base: "Seguir" */
@@ -3437,8 +3451,8 @@ button:focus-visible {
     align-items: center;
     gap: 8px;
     background-color: transparent;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 6px 16px;
     font-size: 14px;
@@ -3449,23 +3463,23 @@ button:focus-visible {
 }
 
 .artist-follow-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-color: #ffffff;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    background-color: var(--bg-hover);
+    border-color: var(--text-primary);
+    box-shadow: 0 0 10px var(--shadow-color);
 }
 
 /* Estado activo: "Siguiendo" */
 .artist-follow-btn.following {
-    background-color: rgba(30, 41, 59, 0.5);
-    color: #ffffff;
-    border: 1px solid var(--glass-border-strong);
-    box-shadow: 0 0 12px var(--purple-glow);
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--hover-border);
+    box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .artist-follow-btn.following:hover {
-    background-color: var(--purple-dim);
-    border-color: var(--glass-border-strong);
-    box-shadow: 0 0 15px var(--purple-glow);
+    background-color: var(--accent-dim);
+    border-color: var(--hover-border);
+    box-shadow: 0 0 15px var(--accent-glow);
 }
 
 /* Estilos para mensajes del chat */
@@ -3475,7 +3489,7 @@ button:focus-visible {
 }
 .msg-bot i {
     font-style: italic;
-    color: #a0a0a8;
+    color: var(--text-secondary);
 }
 .msg-bot ul, .msg-bot ol {
     margin: 8px 0 8px 20px;
@@ -3484,7 +3498,7 @@ button:focus-visible {
     margin-bottom: 4px;
 }
 .msg-bot code {
-    background: rgba(0,0,0,0.4);
+    background: var(--bg-input);
     padding: 2px 6px;
     border-radius: 6px;
     font-family: monospace;
@@ -3500,7 +3514,7 @@ button:focus-visible {
 }
 
 .fullplayer-artist-clickable:hover {
-    color: var(--purple-primary) !important;
+    color: var(--accent) !important;
     text-decoration: underline;
     text-underline-offset: 4px;
 }
@@ -3509,18 +3523,763 @@ button:focus-visible {
     color: var(--text-primary);
 }
 #currentArtist:hover {
-    color: var(--purple-primary);
+    color: var(--accent);
 }
 
 .icon{
-  /* Define el tamaño visual que quieres en tu interfaz */
   width: 32px; 
-  height: auto; /* Permite que la altura se calcule sola manteniendo la proporción */
-  
-  /* Evita que el icono se deforme si en algún punto se fuerzan ambas medidas */
+  height: auto; 
   object-fit: contain; 
-  
-  /* Asegura máxima nitidez al escalar imágenes con bordes finos */
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
+}
+
+/* ===== RESPONSIVE SIDEBAR ===== */
+
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 12px;
+    line-height: 1;
+}
+
+.hamburger-btn:hover {
+    color: var(--accent);
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+.sidebar-left {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: block;
+    }
+
+    .sidebar-left {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        background: var(--bg-primary);
+        border-right: 1px solid var(--glass-border);
+        overflow-y: auto;
+        padding: 16px;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar-left.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 30px var(--shadow-color);
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+        opacity: 1;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .global-header {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+    }
+
+    .sidebar-brand {
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid var(--glass-border);
+        margin-bottom: 8px;
+    }
+
+    .sidebar-brand .brand-logo {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+
+    .sidebar-brand .brand-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .sidebar-menu .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        font-size: 15px;
+        width: 100%;
+        border-radius: 10px;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .sidebar-menu .menu-item i {
+        font-size: 20px;
+        min-width: 24px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-menu .menu-item span {
+        display: inline-block;
+        white-space: nowrap;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .sidebar-playlists .playlists-header {
+        padding: 12px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .sidebar-playlists .playlist-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        font-size: 14px;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        width: 100%;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-radius: 8px;
+    }
+
+    .sidebar-playlists .playlist-link i {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-playlists .playlist-link span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+        color: var(--text-primary);
+    }
+
+    .sidebar-footer .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        font-size: 14px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        border-radius: 10px;
+    }
+
+    .sidebar-footer .menu-item i {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-menu .menu-item {
+        justify-content: flex-start;
+        text-align: left;
+    }
+
+    .sidebar-playlists .playlist-link {
+        justify-content: flex-start;
+        text-align: left;
+    }
+
+    .sidebar-playlists .playlist-link span {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+    }
+
+    .playlists-scroll {
+        width: 100%;
+        overflow-x: hidden;
+    }
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+        padding: 20px 16px;
+        margin: 16px auto;
+        max-height: 90vh;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .modal-content-medium {
+        width: 95%;
+        max-width: 95%;
+    }
+
+    .modal-body {
+        max-height: 60vh;
+        overflow-y: auto;
+        padding: 8px 4px;
+    }
+
+    .modal-body-scrollable {
+        max-height: 55vh;
+        overflow-y: auto;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 0 4px;
+    }
+
+    .modal-footer .btn-modal-primary,
+    .modal-footer .btn-modal-secondary {
+        width: 100%;
+        justify-content: center;
+        padding: 12px;
+    }
+
+    .modal-footer-divided {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-input-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-input-row .modal-input-row-flex {
+        width: 100%;
+    }
+
+    .edit-review-modal-content {
+        width: 95%;
+        max-width: 95%;
+        padding: 16px;
+    }
+
+    .edit-review-rating-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .edit-review-stars-container {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .edit-review-body {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .songs-container-box {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    #editAlbumSongsContainer .btn-delete-temp-song {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+    }
+
+    #editAlbumSongsContainer input[type="text"] {
+        font-size: 13px;
+        padding: 6px 8px;
+    }
+
+    .modal-header h3 {
+        font-size: 18px;
+    }
+
+    .modal-header .btn-close-modal {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+    }
+
+    .modal-input,
+    .modal-input-compact {
+        font-size: 14px;
+        padding: 10px 12px;
+    }
+
+    .modal-label-block {
+        font-size: 13px;
+    }
+
+    .modal-file-input {
+        font-size: 13px;
+        padding: 8px 0;
+    }
+
+    .add-song-btn-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .btn-add-song-dashed {
+        width: 100%;
+        justify-content: center;
+        padding: 12px;
+    }
+
+    #editAlbumModal .modal-footer {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .playlists-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+    }
+
+    #btnCreatePlaylist {
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 8px;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+
+    #btnCreatePlaylist:hover {
+        background: var(--bg-hover);
+    }
+
+    #btnCreatePlaylist i {
+        font-size: 20px;
+        color: var(--text-primary);
+    }
+}
+
+.btn-loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: var(--btn-text);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* logros etc */ 
+.profile-section {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.profile-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+
+.level-display {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px 20px;
+    border: 1px solid var(--glass-border);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.level-icon {
+    font-size: 36px;
+    line-height: 1;
+}
+
+.level-info {
+    flex: 1;
+    min-width: 120px;
+}
+
+.level-name {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.level-xp {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.level-progress-container {
+    flex: 2;
+    min-width: 150px;
+}
+
+.level-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--glass-border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.level-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.level-progress-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    text-align: right;
+}
+
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+    .achievements-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .achievements-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.achievement-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--glass-border);
+    text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.achievement-card:hover {
+    transform: translateY(-2px);
+}
+
+.achievement-card.unlocked {
+    border-color: var(--hover-border);
+}
+
+.achievement-card.locked {
+    opacity: 0.5;
+    filter: grayscale(0.8);
+}
+
+.achievement-card-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.achievement-card-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.achievement-card-desc {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin: 4px 0 8px;
+}
+
+.achievement-card-rareza {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 8px;
+}
+
+.achievement-card-rareza.comun {
+    color: var(--text-muted);
+    border: 1px solid var(--text-muted);
+}
+
+.achievement-card-rareza.raro {
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+}
+
+.achievement-card-rareza.epico {
+    color: var(--accent);
+    border: 1px solid var(--accent);
+}
+
+.achievement-card-rareza.legendario {
+    color: #f59e0b;
+    border: 1px solid #f59e0b;
+}
+
+.achievement-card-status {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.achievement-card.unlocked .achievement-card-status {
+    color: #10b981;
+}
+
+.achievement-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: var(--bg-secondary);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--hover-border);
+    border-radius: 16px;
+    padding: 20px 32px;
+    box-shadow: 0 12px 40px var(--shadow-color);
+    z-index: 99999;
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    pointer-events: none;
+}
+
+.achievement-toast.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.achievement-toast-icon {
+    font-size: 36px;
+}
+
+.achievement-toast-message {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* Botón de crossfade */
+#btnCrossfade.active {
+    color: var(--accent);
+    filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+/* Ajustes */
+.settings-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.settings-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+}
+
+.settings-section {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.settings-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.settings-row:last-child {
+    border-bottom: none;
+}
+
+.settings-row span {
+    color: var(--text-primary);
+}
+
+/* Toggle switch */
+.toggle-switch {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--glass-border);
+    border-radius: 13px;
+    transition: background 0.3s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background: var(--btn-text);
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(22px);
+}
+
+/* Theme selector */
+.theme-selector {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.theme-option {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    padding: 4px;
+    background: none;
+    transition: border-color 0.3s, transform 0.2s;
+}
+
+.theme-option:hover {
+    transform: scale(1.1);
+}
+
+.theme-option.active {
+    border-color: var(--text-primary);
+}
+
+.theme-color-preview {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+/* Ejemplo de hover en menús */
+.menu-item:hover {
+    background: var(--bg-hover);
+    color: var(--accent);
+}
+
+/* Hover en botones */
+.btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+/* Hover en tarjetas */
+.album-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--card-hover-shadow);
 }

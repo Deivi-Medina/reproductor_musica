@@ -22,6 +22,7 @@ $user_id = $_SESSION['user_id'];
     <link rel="icon" href="<?= BASE_URL ?>assets/img/icon.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/main.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/social.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/components.css">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
@@ -51,15 +52,24 @@ $user_id = $_SESSION['user_id'];
                 <div class="playlists-scroll" id="playlistsDynamicContainer"></div>
             </div>
             <div class="sidebar-footer">
+                <button class="menu-item" id="btnSettingsSidebar" title="Ajustes">
+                    <i data-lucide="settings"></i> <span>Ajustes</span>
+                </button>
                 <a href="<?= BASE_URL ?>controllers/LogoutController.php" class="menu-item"><i data-lucide="log-out"></i> <span>Cerrar sesión</span></a>
             </div>
         </aside>
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
         <!-- ==================== CONTENIDO PRINCIPAL ==================== -->
         <div class="main-content">
 
             <!-- HEADER -->
             <header class="global-header" id="globalHeader">
+                <div class="header-left">
+                    <button id="hamburgerBtn" class="hamburger-btn" aria-label="Abrir menú">
+                        <i data-lucide="menu"></i>
+                    </button>
+                </div>
                 <div class="search-container">
                     <i data-lucide="search" class="search-icon"></i>
                     <input type="text" id="globalSearch" placeholder="¿Qué quieres escuchar hoy?" autocomplete="off">
@@ -232,6 +242,11 @@ $user_id = $_SESSION['user_id'];
                             <div class="stat-number" id="statProfileAvgRating">0.0 ★</div>
                             <div class="stat-label">Calif. media</div>
                         </div>
+                    </div>
+                    <div class="profile-section">
+                        <h3 class="profile-section-title">Nivel y Logros</h3>
+                        <div id="profileLevelContainer"></div>
+                        <div id="profileAchievementsGrid" class="achievements-grid"></div>
                     </div>
                 </div>
             </main>
@@ -459,6 +474,7 @@ $user_id = $_SESSION['user_id'];
         </div>
     </div>
 
+    <!-- ==================== REPRODUCTOR COMPLETO (CON VOLUMEN EN EL EQ) ==================== -->
     <section id="playerOverlay" class="player-overlay hidden">
         <div class="player-top-bar">
             <button class="minimize-btn" onclick="minimizeFullPlayer()" title="Minimizar"><i data-lucide="chevron-down"></i></button>
@@ -468,10 +484,14 @@ $user_id = $_SESSION['user_id'];
                 <button class="toggle-queue-btn" id="btnToggleQueueSidebar" title="Ver / Ocultar Cola"><i data-lucide="list-video"></i></button>
             </div>
         </div>
+
         <div class="player-layout">
+            <!-- CARRÁTULA -->
             <div class="player-visual">
                 <div class="main-cover-wrapper"><img id="currentCover" src="" alt="Album Art"></div>
             </div>
+
+            <!-- CONTROLES DE REPRODUCCIÓN (sin volumen) -->
             <div class="player-controls-container">
                 <div class="track-metadata">
                     <div class="metadata-text">
@@ -494,17 +514,18 @@ $user_id = $_SESSION['user_id'];
                     <button id="btnNext" class="btn-icon" title="Siguiente"><i data-lucide="skip-forward"></i></button>
                     <button id="btnRepeat" class="btn-icon" title="Repetir"><i data-lucide="repeat"></i></button>
                 </div>
-                <div class="volume-group">
-                    <i data-lucide="volume-2" class="vol-icon"></i>
-                    <div class="vol-slider-wrapper"><input type="range" id="volSlider" class="vol-slider" min="0" max="100" value="80"></div>
-                </div>
+                <!-- Aquí no hay volumen; se ha movido al EQ -->
             </div>
+
+            <!-- COLA -->
             <aside class="queue-sidebar" id="queueSidebar">
                 <div class="queue-panel">
                     <h3>A continuación</h3>
                     <div id="queueDynamicList" class="queue-list"></div>
                 </div>
             </aside>
+
+            <!-- ECUALLIZADOR (con Volumen General incluido) -->
             <aside class="queue-sidebar collapsed" id="equalizerSidebar">
                 <div class="queue-panel">
                     <div class="eq-panel-meta">
@@ -512,14 +533,26 @@ $user_id = $_SESSION['user_id'];
                         <button id="btnResetEqualizer" class="btn-eq-reset">Reset</button>
                     </div>
                     <div class="eq-sliders-container">
+                        <!-- 🆕 VOLUMEN GENERAL (Master) -->
+                        <div class="eq-panel-row master-volume-row">
+                            <div class="eq-panel-label-group">
+                                <span class="eq-label-text"><i data-lucide="volume-2"></i> Volumen General</span>
+                                <span id="lblMasterVol" class="eq-value-text">80%</span>
+                            </div>
+                            <input type="range" id="volSlider" class="eq-slider-input master-volume-slider" min="0" max="100" value="80" step="1">
+                        </div>
+
+                        <!-- Bajos -->
                         <div class="eq-panel-row">
                             <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="music"></i> Bajos</span><span id="lblEqBass" class="eq-value-text">0 dB</span></div>
                             <input type="range" id="eqBass" class="eq-slider-input" min="-12" max="12" value="0" step="1">
                         </div>
+                        <!-- Voz -->
                         <div class="eq-panel-row">
                             <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="mic"></i> Voz / Cantante</span><span id="lblEqVocals" class="eq-value-text">0 dB</span></div>
                             <input type="range" id="eqVocals" class="eq-slider-input" min="-12" max="12" value="0" step="1">
                         </div>
+                        <!-- Instrumental -->
                         <div class="eq-panel-row">
                             <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="guitar"></i> Instrumental</span><span id="lblEqTreble" class="eq-value-text">0 dB</span></div>
                             <input type="range" id="eqTreble" class="eq-slider-input" min="-12" max="12" value="0" step="1">
