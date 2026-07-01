@@ -4,6 +4,7 @@ import { renderAlbumCards, renderFavoritesDetailView, renderPlaylistDetailView }
 import { updateDiarySongsSelector, renderIntegratedDiaryFeed } from "./reviews.js";
 import { startGame, stopGame } from "./game.js";
 import { loadFeed, setupFeedInfiniteScroll } from "./social/feed.js";
+import { loadExploreAlbums } from "./explore.js";
 
 export function showSection(section) {
   const previousSection = state.currentSection;
@@ -21,6 +22,7 @@ export function showSection(section) {
     DOM.views.community,
     DOM.views.artistProfile,
     DOM.views.publicProfile,
+    DOM.views.explore,
     document.getElementById("settingsView"),
   ];
   allViews.forEach((view) => {
@@ -32,7 +34,7 @@ export function showSection(section) {
     DOM.sidebar.navFavorites,
     DOM.sidebar.navDiary,
     DOM.sidebar.navGame,
-    DOM.sidebar.navProfile,
+    DOM.sidebar.navExplore,
     DOM.sidebar.navCommunity,
   ];
   navItems.forEach((item) => {
@@ -65,7 +67,6 @@ export function showSection(section) {
       startGame();
     }
   } else if (section === "profile") {
-    if (DOM.sidebar.navProfile) DOM.sidebar.navProfile.classList.add("active");
     if (DOM.views.profile) {
       DOM.views.profile.classList.remove("hidden");
       if (typeof window.loadProfileData === "function") {
@@ -82,6 +83,12 @@ export function showSection(section) {
           setTimeout(setupFeedInfiniteScroll, 300);
         }
       }, 100);
+    }
+  } else if (section === "explore") {
+    if (DOM.sidebar.navExplore) DOM.sidebar.navExplore.classList.add("active");
+    if (DOM.views.explore) {
+      DOM.views.explore.classList.remove("hidden");
+      loadExploreAlbums();
     }
   } else if (section === "settings") {
     const settingsView = document.getElementById("settingsView");

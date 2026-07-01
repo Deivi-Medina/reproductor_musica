@@ -23,7 +23,7 @@ $user_id = $_SESSION['user_id'];
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/main.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/social.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/components.css">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 
 <body>
@@ -41,7 +41,8 @@ $user_id = $_SESSION['user_id'];
                 <button class="menu-item" id="navFavorites"><i data-lucide="heart" class="heart-icon-fixed"></i> <span>Canciones que te gustan</span></button>
                 <button class="menu-item" id="navDiary"><i data-lucide="book-open" class="diary-icon-fixed"></i> <span>Diario & Reseñas</span></button>
                 <button class="menu-item" id="navGame"><i data-lucide="gamepad-2"></i> <span>Juego</span></button>
-                <button class="menu-item" id="navProfile"><i data-lucide="user"></i> <span>Mi perfil</span></button>
+                <!-- Reemplazar "Mi perfil" por "Explorar" -->
+                <button class="menu-item" id="navExplore"><i data-lucide="compass"></i> <span>Explorar</span></button>
                 <button class="menu-item" id="navCommunity"><i data-lucide="users"></i> <span>Comunidad</span></button>
             </nav>
             <div class="sidebar-playlists">
@@ -74,9 +75,14 @@ $user_id = $_SESSION['user_id'];
                     <i data-lucide="search" class="search-icon"></i>
                     <input type="text" id="globalSearch" placeholder="¿Qué quieres escuchar hoy?" autocomplete="off">
                 </div>
+                <div class="header-right">
+                    <button id="headerProfileBtn" class="header-profile-btn" title="Mi perfil">
+                        <i data-lucide="user"></i>
+                    </button>
+                </div>
             </header>
 
-            <!-- ==================== VISTAS EXISTENTES ==================== -->
+            <!-- ==================== VISTAS ==================== -->
 
             <!-- Biblioteca (Inicio) -->
             <main class="content-wrapper" id="mainLibrary">
@@ -254,7 +260,42 @@ $user_id = $_SESSION['user_id'];
             <!-- Vista de perfil de artista -->
             <div id="artistProfileView" class="hidden"></div>
 
-            <!-- ==================== NUEVA VISTA: COMUNIDAD ==================== -->
+            <!-- ==================== NUEVA VISTA: EXPLORAR ==================== -->
+            <main class="content-wrapper hidden" id="exploreView">
+                <div class="explore-container">
+                    <div class="explore-header">
+                        <h2 class="section-title"><i data-lucide="compass"></i> Explorar música</h2>
+                        <span id="exploreTotalResults" class="explore-total">0 álbumes encontrados</span>
+                    </div>
+                    <div class="explore-search-box">
+                        <i data-lucide="search" class="explore-search-icon"></i>
+                        <input type="text" id="exploreSearch" placeholder="Buscar álbumes o artistas..." class="explore-search-input" autocomplete="off">
+                        <button id="exploreSearchClear" class="explore-search-clear hidden"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="explore-artists-section">
+                        <h3 class="section-subtitle">Artistas populares</h3>
+                        <div class="carousel-wrapper">
+                            <button class="carousel-btn carousel-btn-left" id="artistCarouselLeft">
+                                <i data-lucide="chevron-left"></i>
+                            </button>
+                            <div id="exploreArtistsCarousel" class="artists-carousel"></div>
+                            <button class="carousel-btn carousel-btn-right" id="artistCarouselRight">
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="exploreGrid" class="album-grid"></div>
+                    <div id="exploreLoader" class="explore-loader hidden">
+                        <div class="loading-spinner"></div>
+                        <span>Cargando más álbumes...</span>
+                    </div>
+                    <div id="exploreEnd" class="explore-end hidden">
+                        <span>🎵 No hay más álbumes</span>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Comunidad -->
             <main class="content-wrapper hidden" id="communityView">
                 <div class="community-container">
                     <div class="community-header-inline">
@@ -264,7 +305,7 @@ $user_id = $_SESSION['user_id'];
                                 <i data-lucide="rss"></i> Feed
                             </button>
                             <button class="community-tab" data-tab="explore">
-                                <i data-lucide="compass"></i> Explorar
+                                <i data-lucide="compass"></i> Explorar usuarios
                             </button>
                             <button class="community-tab" data-tab="followers">
                                 <i data-lucide="users"></i> Seguidores
@@ -330,8 +371,6 @@ $user_id = $_SESSION['user_id'];
             </main>
 
             <div id="publicProfileView" class="content-wrapper hidden"></div>
-            <div id="feedView" class="content-wrapper hidden"></div>
-            <div id="exploreView" class="content-wrapper hidden"></div>
         </div>
     </div>
 
@@ -458,6 +497,9 @@ $user_id = $_SESSION['user_id'];
         <div id="ctxPlaylistsList" class="context-playlists-list"></div>
     </div>
 
+    <!-- Contenedor oculto para YouTube (para audio) -->
+    <div id="youtubePlayerContainer" style="position:absolute; left:-9999px; top:-9999px; width:200px; height:200px; opacity:0.001; pointer-events:none; z-index:-9999;"></div>
+
     <div id="miniPlayer" class="mini-player hidden" onclick="expandFullPlayer()">
         <div class="mini-player-content">
             <img id="miniCover" src="" alt="Cover Mini">
@@ -533,7 +575,6 @@ $user_id = $_SESSION['user_id'];
                         <button id="btnResetEqualizer" class="btn-eq-reset">Reset</button>
                     </div>
                     <div class="eq-sliders-container">
-                        <!-- 🆕 VOLUMEN GENERAL (Master) -->
                         <div class="eq-panel-row master-volume-row">
                             <div class="eq-panel-label-group">
                                 <span class="eq-label-text"><i data-lucide="volume-2"></i> Volumen General</span>
@@ -541,18 +582,14 @@ $user_id = $_SESSION['user_id'];
                             </div>
                             <input type="range" id="volSlider" class="eq-slider-input master-volume-slider" min="0" max="100" value="80" step="1">
                         </div>
-
-                        <!-- Bajos -->
                         <div class="eq-panel-row">
                             <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="music"></i> Bajos</span><span id="lblEqBass" class="eq-value-text">0 dB</span></div>
                             <input type="range" id="eqBass" class="eq-slider-input" min="-12" max="12" value="0" step="1">
                         </div>
-                        <!-- Voz -->
                         <div class="eq-panel-row">
                             <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="mic"></i> Voz / Cantante</span><span id="lblEqVocals" class="eq-value-text">0 dB</span></div>
                             <input type="range" id="eqVocals" class="eq-slider-input" min="-12" max="12" value="0" step="1">
                         </div>
-                        <!-- Instrumental -->
                         <div class="eq-panel-row">
                             <div class="eq-panel-label-group"><span class="eq-label-text"><i data-lucide="guitar"></i> Instrumental</span><span id="lblEqTreble" class="eq-value-text">0 dB</span></div>
                             <input type="range" id="eqTreble" class="eq-slider-input" min="-12" max="12" value="0" step="1">
@@ -603,6 +640,7 @@ $user_id = $_SESSION['user_id'];
 
     <!-- 4. Librerías externas -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
 
 </body>
 

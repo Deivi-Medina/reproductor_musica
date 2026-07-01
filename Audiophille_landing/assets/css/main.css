@@ -4283,3 +4283,612 @@ button:focus-visible {
     border-color: var(--accent);
     box-shadow: var(--card-hover-shadow);
 }
+
+/* Header principal */
+.global-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Esto distribuye los elementos */
+    padding: 16px 24px; /* Ajusta según tu diseño */
+}
+
+/* Contenedor izquierdo (hamburguesa) */
+.header-left {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Barra de búsqueda (centro) */
+.search-container {
+    flex: 1;
+    max-width: 500px;
+    margin: 0 20px;
+}
+
+/* Contenedor derecho (perfil) */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    margin-left: auto; /* Empuja todo a la derecha */
+}
+
+/* Botón de perfil */
+.header-profile-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.header-profile-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.header-profile-btn i {
+    width: 24px;
+    height: 24px;
+}
+
+/* ============================================================
+   BOTÓN AÑADIR A BIBLIOTECA (EXPLORAR)
+   ============================================================ */
+
+.btn-add-to-library {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    margin-top: 12px;
+    background: rgba(157, 78, 221, 0.08);
+    border: 1.5px solid rgba(157, 78, 221, 0.2);
+    border-radius: 40px;
+    color: var(--accent, #9d4edd);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+    font-family: var(--font-primary, 'Inter', sans-serif);
+    letter-spacing: 0.01em;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-add-to-library i {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.btn-add-to-library:hover:not(.added) {
+    background: rgba(157, 78, 221, 0.18);
+    border-color: var(--accent, #9d4edd);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(157, 78, 221, 0.15);
+}
+
+.btn-add-to-library:active:not(.added) {
+    transform: translateY(0px) scale(0.97);
+}
+
+/* Estado: ya añadido */
+.btn-add-to-library.added {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #10b981;
+    cursor: default;
+    pointer-events: none;
+}
+
+.btn-add-to-library.added i {
+    color: #10b981;
+}
+
+.btn-add-to-library.added::after {
+    content: '✓';
+    position: absolute;
+    right: 14px;
+    font-size: 1.1rem;
+    opacity: 0.6;
+}
+
+/* Efecto de "clic" animado al añadir */
+.btn-add-to-library.adding {
+    animation: btnAddPulse 0.5s ease;
+}
+
+@keyframes btnAddPulse {
+    0% { transform: scale(1); }
+    30% { transform: scale(0.97); background: rgba(16, 185, 129, 0.2); }
+    60% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+/* Para tarjetas de álbum en exploración */
+.explore-album-card .card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.explore-album-card .album-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted, #6a5a78);
+    margin-bottom: 4px;
+}
+
+/* Ajuste para el contenedor de la tarjeta */
+.explore-album-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.explore-album-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--card-hover-shadow, 0 8px 30px rgba(157, 78, 221, 0.15));
+}
+
+/* Mejora para títulos largos (con ellipsis) */
+.explore-album-card .card-info h3 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .btn-add-to-library {
+        font-size: 0.75rem;
+        padding: 8px 12px;
+        gap: 6px;
+    }
+    .btn-add-to-library i {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* Carrusel de artistas */
+.artists-carousel {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 16px 0;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+.artists-carousel::-webkit-scrollbar {
+    height: 4px;
+}
+.artists-carousel::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 4px;
+}
+
+.artist-carousel-card {
+    flex: 0 0 140px;
+    scroll-snap-align: start;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 12px;
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-fast);
+}
+.artist-carousel-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--hover-border);
+}
+
+.artist-card-image {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+.artist-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.artist-card-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.btn-follow-artist {
+    margin-top: 8px;
+    padding: 4px 16px;
+    font-size: 0.7rem;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+.btn-follow-artist.following {
+    background: var(--accent-dim);
+    border-color: var(--hover-border);
+    color: var(--accent);
+}
+.btn-follow-artist:hover {
+    background: var(--bg-hover);
+    border-color: var(--hover-border);
+}
+
+/* Contenedor del carrusel con botones */
+.carousel-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.artists-carousel {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 8px 0;
+    flex: 1;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.artists-carousel::-webkit-scrollbar {
+    height: 4px;
+}
+.artists-carousel::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 4px;
+}
+
+/* Botones de navegación */
+.carousel-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    z-index: 2;
+}
+.carousel-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--hover-border);
+    transform: scale(1.05);
+}
+.carousel-btn:active {
+    transform: scale(0.95);
+}
+
+/* Tarjeta de artista */
+.artist-carousel-card {
+    flex: 0 0 140px;
+    scroll-snap-align: start;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 12px 8px;
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+    min-width: 0; /* Permite truncar texto */
+}
+.artist-carousel-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--hover-border);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.artist-card-image {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 8px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+.artist-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.artist-card-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    padding: 0 4px;
+}
+
+.btn-follow-artist {
+    margin-top: 6px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    width: 100%;
+}
+.btn-follow-artist.following {
+    background: var(--accent-dim);
+    border-color: var(--hover-border);
+    color: var(--accent);
+}
+.btn-follow-artist:hover {
+    background: var(--bg-hover);
+    border-color: var(--hover-border);
+}
+
+/* ============================================================
+   BOTÓN AÑADIR A BIBLIOTECA - GLOBAL (EXPLORAR Y DETALLE)
+   ============================================================ */
+
+.btn-add-to-library {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    padding: 10px 16px !important;
+    margin-top: 12px !important;
+    background: rgba(157, 78, 221, 0.08) !important;
+    border: 1.5px solid rgba(157, 78, 221, 0.2) !important;
+    border-radius: 40px !important;
+    color: #9d4edd !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    cursor: pointer !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    letter-spacing: 0.01em !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    min-height: 42px !important;
+}
+
+.btn-add-to-library i {
+    width: 18px !important;
+    height: 18px !important;
+    transition: transform 0.3s ease !important;
+    flex-shrink: 0 !important;
+    color: inherit !important;
+}
+
+/* Hover (solo si NO está añadido) */
+.btn-add-to-library:not(.added):hover {
+    background: rgba(157, 78, 221, 0.18) !important;
+    border-color: #9d4edd !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(157, 78, 221, 0.15) !important;
+}
+
+/* Click activo */
+.btn-add-to-library:not(.added):active {
+    transform: translateY(0px) scale(0.97) !important;
+}
+
+/* Estado: ya añadido */
+.btn-add-to-library.added {
+    background: rgba(16, 185, 129, 0.08) !important;
+    border-color: rgba(16, 185, 129, 0.25) !important;
+    color: #10b981 !important;
+    cursor: default !important;
+    pointer-events: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.btn-add-to-library.added i {
+    color: #10b981 !important;
+}
+
+/* Check añadido (solo si no hay otro contenido) */
+.btn-add-to-library.added::after {
+    content: '✓' !important;
+    position: absolute !important;
+    right: 14px !important;
+    font-size: 1.1rem !important;
+    opacity: 0.6 !important;
+    color: #10b981 !important;
+}
+
+/* Animación de pulso al añadir */
+.btn-add-to-library.adding {
+    animation: btnAddPulse 0.5s ease !important;
+}
+
+@keyframes btnAddPulse {
+    0% { transform: scale(1); }
+    30% { transform: scale(0.97); background: rgba(16, 185, 129, 0.2); }
+    60% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .btn-add-to-library {
+        font-size: 0.75rem !important;
+        padding: 8px 12px !important;
+        gap: 6px !important;
+        min-height: 36px !important;
+    }
+    .btn-add-to-library i {
+        width: 16px !important;
+        height: 16px !important;
+    }
+}
+
+
+/* ============================================================
+   MEJORAS DE ESPACIADO EN EXPLORAR
+   ============================================================ */
+
+/* Espacio entre el buscador y el carrusel de artistas */
+.explore-search-box {
+    margin-bottom: 24px;
+}
+
+/* Separación entre el carrusel de artistas y el grid de álbumes */
+.explore-artists-section {
+    margin-bottom: 32px;
+}
+
+/* Título de la sección de artistas con más espacio inferior */
+.explore-artists-section .section-subtitle {
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* Tarjetas de artista: más espacio interno y mejor manejo del texto */
+.artist-carousel-card {
+    padding: 16px 12px !important;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.artist-card-image {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 10px;
+}
+
+.artist-card-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    padding: 0 4px;
+    min-height: 1.2em;
+}
+
+.btn-follow-artist {
+    margin-top: 8px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 120px;
+    white-space: nowrap;
+}
+
+/* Grid de álbumes: más separación entre tarjetas */
+.album-grid {
+    gap: 28px !important; /* Aumentamos el gap */
+}
+
+/* Tarjetas de álbum en exploración: mejor espaciado interno */
+.explore-album-card {
+    padding: 16px 14px !important;
+}
+
+.explore-album-card .card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 8px;
+}
+
+.explore-album-card .card-info h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.explore-album-card .album-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+/* Botón "Añadir a biblioteca" con margen superior suficiente */
+.btn-add-to-library {
+    margin-top: 12px !important;
+    padding: 10px 16px !important;
+    font-size: 0.85rem !important;
+    width: 100%;
+    border-radius: 40px;
+    min-height: 42px;
+}
+
+/* Espaciado entre filas del grid en móviles */
+@media (max-width: 480px) {
+    .album-grid {
+        gap: 20px !important;
+    }
+    .explore-album-card {
+        padding: 12px 10px !important;
+    }
+    .btn-add-to-library {
+        font-size: 0.75rem !important;
+        padding: 8px 12px !important;
+        min-height: 36px;
+    }
+    .artist-carousel-card {
+        min-height: 160px;
+        padding: 12px 8px !important;
+    }
+    .artist-card-image {
+        width: 64px;
+        height: 64px;
+    }
+}
+
+/* Ajuste del contenedor del carrusel para que no se desborde */
+.carousel-wrapper {
+    gap: 12px;
+}
+
+.artists-carousel {
+    padding: 8px 0 12px 0;
+    gap: 18px;
+}

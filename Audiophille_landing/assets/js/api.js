@@ -7,11 +7,11 @@ if (!BASE_URL) {
 const API_URL = `${BASE_URL}api.php`;
 
 async function handleResponse(response) {
+  const text = await response.text();
   let data;
   try {
-    data = await response.json();
+    data = JSON.parse(text);
   } catch (e) {
-    const text = await response.text();
     throw new Error(`Error del servidor: ${text.substring(0, 100)}`);
   }
   if (!response.ok) {
@@ -23,7 +23,6 @@ async function handleResponse(response) {
   }
   return data;
 }
-
 export async function get(action, params = {}) {
   let url = API_URL;
   const query = new URLSearchParams();

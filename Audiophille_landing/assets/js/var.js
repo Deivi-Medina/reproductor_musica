@@ -5,7 +5,7 @@ const DOM = {
     navFavorites: document.getElementById("navFavorites"),
     navDiary: document.getElementById("navDiary"),
     navGame: document.getElementById("navGame"),
-    navProfile: document.getElementById("navProfile"),
+    navExplore: document.getElementById("navExplore"),
     navCommunity: document.getElementById("navCommunity"),
     btnCreatePlaylist: document.getElementById("btnCreatePlaylist"),
     playlistsContainer: document.getElementById("playlistsDynamicContainer"),
@@ -17,6 +17,7 @@ const DOM = {
     game: document.getElementById("gameView"),
     profile: document.getElementById("profileView"),
     community: document.getElementById("communityView"),
+    explore: document.getElementById("exploreView"),
     tracksList: document.getElementById("tracksDynamicList"),
     albumGrid: document.getElementById("albumGrid"),
     header: document.getElementById("globalHeader"),
@@ -134,6 +135,10 @@ const DOM = {
     nextBtn: document.getElementById("gameNextBtn"),
     message: document.getElementById("gameMessage"),
     playingIndicator: document.getElementById("gamePlayingIndicator"),
+  },
+
+  header: {
+    profileBtn: document.getElementById("headerProfileBtn"),
   },
 };
 

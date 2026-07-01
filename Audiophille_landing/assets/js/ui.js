@@ -1,15 +1,67 @@
 // js/ui.js
 import DOM, { state, preloadDurations, loadInitialData } from "./var.js";
-import { queue, queueIndex, playActiveSong, setQueue, reorderQueue } from "./audio.js";
+import { queue, queueIndex, playActiveSong, setQueue, reorderQueue, player } from "./audio.js";
 import { renderReviews } from "./reviews.js";
 import { showSection } from "./navigation.js";
 import { showAlert } from "./modals.js";
 import { openArtistProfile } from "./artists.js";
 import { addSongToPlaylist } from "./services/playlistService.js";
+import { addAlbumToLibrary } from "./services/explorerService.js";
 
 let contextMenuSong = null;
 let draggedIndex = null;
 let dragOverIndex = null;
+
+// ============================================================
+// ESCUCHAR EVENTO DE CARGA DEL REPRODUCTOR
+// ============================================================
+document.addEventListener("playerLoading", (e) => {
+  const loading = e.detail.loading;
+  const nextBtn = document.getElementById("btnNext");
+  const prevBtn = document.getElementById("btnPrev");
+  if (nextBtn) nextBtn.disabled = loading;
+  if (prevBtn) prevBtn.disabled = loading;
+});
+
+// Inicializar estado de los botones al cargar
+setTimeout(() => {
+  const loading = player.isLoading ? player.isLoading() : false;
+  const nextBtn = document.getElementById("btnNext");
+  const prevBtn = document.getElementById("btnPrev");
+  if (nextBtn) nextBtn.disabled = loading;
+  if (prevBtn) prevBtn.disabled = loading;
+}, 100);
+
+// ============================================================
+// UTILIDADES
+// ============================================================
+function isYouTubeSong(song) {
+  const url = song.file || song.archivo_url || "";
+  return url.startsWith("youtube:");
+}
+
+function getYouTubeIcon() {
+  return `<i data-lucide="youtube" style="width:14px; height:14px; color:#ff0000; margin-left:6px; flex-shrink:0;" title="Reproducción desde YouTube"></i>`;
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return str.replace(/[&<>]/g, (m) => {
+    if (m === "&") return "&amp;";
+    if (m === "<") return "&lt;";
+    if (m === ">") return "&gt;";
+    return m;
+  });
+}
+
+function formatDuration(seconds) {
+  if (!seconds || seconds === 0) return "--:--";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, "0");
+  return `${mins}:${secs}`;
+}
 
 function getAlbums() {
   return window.albumsFromDB || [];
@@ -55,6 +107,9 @@ function getAllAvailableSongs() {
   return all;
 }
 
+// ============================================================
+// RENDERIZADO DE ÁLBUMES (Inicio)
+// ============================================================
 export function renderAlbumCards(query = "") {
   if (!DOM.views.albumGrid) return;
   DOM.views.albumGrid.innerHTML = "";
@@ -171,27 +226,45 @@ export function renderAlbumCards(query = "") {
   if (window.lucide) window.lucide.createIcons();
 }
 
-export function openAlbumView(idx) {
+// ============================================================
+// VISTA DETALLE DE ÁLBUM / PLAYLIST (con indicador de YouTube)
+// ============================================================
+export function openAlbumView(albumOrIndex, fromExplore = false) {
   if (DOM.views.artistProfile) DOM.views.artistProfile.classList.add("hidden");
+
+  let album;
+  let idx;
+
+  if (typeof albumOrIndex === "number") {
+    const albums = getAlbums();
+    idx = albumOrIndex;
+    album = albums[idx];
+  } else if (typeof albumOrIndex === "object" && albumOrIndex.id_album) {
+    album = albumOrIndex;
+    idx = -1;
+  } else {
+    return;
+  }
+
+  if (!album) return;
 
   state.activeAlbumIndex = idx;
   state.activePlaylistName = null;
   state.currentSection = "home";
+  state.fromExplore = fromExplore || false; // ✅ Guardar de dónde venimos
+
   if (DOM.extra.playlistInlineContainer) DOM.extra.playlistInlineContainer.classList.add("hidden");
   if (DOM.views.library) DOM.views.library.classList.add("hidden");
+  if (DOM.views.explore) DOM.views.explore.classList.add("hidden"); // ✅ Ocultar Explorar
   if (DOM.views.albumDetail) DOM.views.albumDetail.classList.remove("hidden");
 
-  const albums = getAlbums();
-  const album = albums[idx];
-  if (!album) return;
-
-  if (DOM.currentAlbumDetail.cover) DOM.currentAlbumDetail.cover.src = album.cover;
-  if (DOM.currentAlbumDetail.title) DOM.currentAlbumDetail.title.innerText = album.title;
+  if (DOM.currentAlbumDetail.cover) DOM.currentAlbumDetail.cover.src = album.caratula_url || album.cover;
+  if (DOM.currentAlbumDetail.title) DOM.currentAlbumDetail.title.innerText = album.titulo || album.title;
 
   if (DOM.currentAlbumDetail.artist) {
     const artistSpan = document.createElement("span");
     artistSpan.className = "artist-clickable";
-    artistSpan.textContent = album.artist;
+    artistSpan.textContent = album.artista || album.artist;
     artistSpan.style.cursor = "pointer";
     artistSpan.style.color = "var(--text-secondary)";
     artistSpan.style.transition = "color 0.2s";
@@ -199,35 +272,80 @@ export function openAlbumView(idx) {
     artistSpan.addEventListener("mouseleave", () => (artistSpan.style.color = "var(--text-secondary)"));
     artistSpan.addEventListener("click", (e) => {
       e.stopPropagation();
-      openArtistProfile(album.artist);
+      openArtistProfile(album.artista || album.artist);
     });
     DOM.currentAlbumDetail.artist.innerHTML = "";
     DOM.currentAlbumDetail.artist.appendChild(artistSpan);
   }
 
+  const isUserAlbum = album.id_usuario === state.user_id || !fromExplore;
+  const isAdded = album.added === "1" || album.added === 1 || isUserAlbum;
+
   if (DOM.albumActions.row) {
-    DOM.albumActions.row.style.display = album.title === "Mis Archivos Importados" ? "none" : "flex";
-  }
-  if (DOM.albumActions.btnEdit) {
-    DOM.albumActions.btnEdit.innerHTML = `<i data-lucide="pencil" style="width:14px; height:14px;"></i> Editar Álbum`;
-  }
-  if (DOM.albumActions.btnDelete) {
-    DOM.albumActions.btnDelete.innerHTML = `<i data-lucide="trash-2" style="width:14px; height:14px;"></i> Eliminar Álbum`;
+    DOM.albumActions.row.style.display = "flex";
+    if (isAdded && isUserAlbum) {
+      DOM.albumActions.btnEdit.style.display = "flex";
+      DOM.albumActions.btnDelete.style.display = "flex";
+      DOM.albumActions.btnEdit.innerHTML = `<i data-lucide="pencil" style="width:14px; height:14px;"></i> Editar Álbum`;
+      DOM.albumActions.btnDelete.innerHTML = `<i data-lucide="trash-2" style="width:14px; height:14px;"></i> Eliminar Álbum`;
+      const addBtn = document.getElementById("btnAddAlbumFromDetail");
+      if (addBtn) addBtn.style.display = "none";
+    } else {
+      DOM.albumActions.btnEdit.style.display = "none";
+      DOM.albumActions.btnDelete.style.display = "none";
+      let addBtn = document.getElementById("btnAddAlbumFromDetail");
+      if (!addBtn) {
+        addBtn = document.createElement("button");
+        addBtn.id = "btnAddAlbumFromDetail";
+        addBtn.className = "btn-add-to-library";
+        addBtn.innerHTML = `<i data-lucide="plus-circle"></i> Añadir a biblioteca`;
+        DOM.albumActions.row.appendChild(addBtn);
+      }
+      addBtn.style.display = "flex";
+      addBtn.onclick = async () => {
+        try {
+          const data = await addAlbumToLibrary(album.id_album);
+          if (data.success) {
+            await loadInitialData();
+            renderAlbumCards();
+            await showAlert("Álbum añadido a tu biblioteca", "Éxito", "success");
+            openAlbumView(album, false);
+          } else {
+            await showAlert(data.message || "Error al añadir", "Error");
+          }
+        } catch (err) {
+          await showAlert("Error de conexión", "Error");
+        }
+      };
+    }
   }
 
   if (DOM.views.tracksList) DOM.views.tracksList.innerHTML = "";
-  album.songs.forEach((song, songIdx) => {
+  const songs = album.songs || [];
+  songs.forEach((song, songIdx) => {
     const activeClass = queue.length > 0 && queue[queueIndex]?.file === song.file ? "active-track" : "";
     const row = document.createElement("div");
     row.className = `track-row ${activeClass}`;
+    const youtubeIcon = isYouTubeSong(song) ? getYouTubeIcon() : "";
     row.innerHTML = `
       <span class="track-number">${songIdx + 1}</span>
-      <span class="track-title">${escapeHtml(song.trackTitle)}</span>
-      <span class="track-album-inside">${escapeHtml(album.title)}</span>
-      <span class="track-duration">--:--</span>
+      <span class="track-title">${escapeHtml(song.titulo || song.trackTitle)}${youtubeIcon}</span>
+      <span class="track-album-inside">${escapeHtml(album.titulo || album.title)}</span>
+      <span class="track-duration">${song.duracion_segundos ? formatDuration(song.duracion_segundos) : "--:--"}</span>
       <button class="btn-track-actions"><i data-lucide="more-horizontal"></i></button>
     `;
-    row.addEventListener("click", () => playNewAlbumQueue(idx, songIdx));
+    row.addEventListener("click", () => {
+      setQueue(
+        songs.map((s) => ({
+          ...s,
+          artistName: album.artista || album.artist,
+          albumCover: album.caratula_url || album.cover,
+          originalAlbumIdx: idx,
+        })),
+        songIdx,
+      );
+      playActiveSong();
+    });
     const btnActions = row.querySelector(".btn-track-actions");
     btnActions.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -235,121 +353,14 @@ export function openAlbumView(idx) {
     });
     if (DOM.views.tracksList) DOM.views.tracksList.appendChild(row);
   });
-  preloadDurations(album.songs, DOM.views.tracksList);
+
+  preloadDurations(songs, DOM.views.tracksList);
   if (window.lucide) window.lucide.createIcons();
 }
 
-export function closeAlbumView() {
-  showSection("home");
-}
-
-function playNewAlbumQueue(albumIdx, songIdx) {
-  const albums = getAlbums();
-  const album = albums[albumIdx];
-  if (!album) return;
-  setQueue(
-    album.songs.map((song) => ({
-      ...song,
-      artistName: song.artistName || album.artist,
-      albumCover: song.albumCover || album.cover,
-      originalAlbumIdx: albumIdx,
-    })),
-    songIdx,
-  );
-  playActiveSong();
-}
-
-export function renderQueueSidebarList() {
-  if (!DOM.queue.dynamicList) return;
-  const container = DOM.queue.dynamicList;
-  container.innerHTML = "";
-
-  queue.forEach((song, idx) => {
-    const item = document.createElement("div");
-    item.className = `queue-item ${idx === queueIndex ? "queue-active" : ""}`;
-    item.draggable = true;
-    item.dataset.index = idx;
-
-    item.innerHTML = `
-      <div class="queue-title">${escapeHtml(song.trackTitle)}</div>
-      <div class="queue-artist">${escapeHtml(song.artistName)}</div>
-    `;
-
-    // Eventos de drag & drop
-    item.addEventListener("dragstart", handleDragStart);
-    item.addEventListener("dragenter", handleDragEnter);
-    item.addEventListener("dragover", handleDragOver);
-    item.addEventListener("drop", handleDrop);
-    item.addEventListener("dragend", handleDragEnd);
-
-    // Click para reproducir
-    item.addEventListener("click", () => {
-      setQueue(queue, idx);
-      playActiveSong();
-    });
-
-    container.appendChild(item);
-  });
-}
-
-// ==================== MANEJADORES DE DRAG & DROP ====================
-
-function handleDragStart(e) {
-  draggedIndex = parseInt(this.dataset.index);
-  this.style.opacity = "0.5";
-  e.dataTransfer.effectAllowed = "move";
-  // Opcional: guardar el índice en dataTransfer para mayor robustez
-  e.dataTransfer.setData("text/plain", String(draggedIndex));
-}
-
-function handleDragEnter(e) {
-  e.preventDefault();
-  this.classList.add("drag-over");
-}
-
-function handleDragOver(e) {
-  e.preventDefault(); // Necesario para permitir drop
-  e.dataTransfer.dropEffect = "move";
-}
-
-function handleDrop(e) {
-  e.preventDefault();
-  this.classList.remove("drag-over");
-
-  const targetIndex = parseInt(this.dataset.index);
-  // Usar draggedIndex (variable global) o el valor de dataTransfer
-  const fromIndex = draggedIndex !== null ? draggedIndex : parseInt(e.dataTransfer.getData("text/plain"));
-
-  if (fromIndex !== null && targetIndex !== null && fromIndex !== targetIndex) {
-    // Reordenar la cola
-    reorderQueue(fromIndex, targetIndex);
-    // Refrescar la vista
-    renderQueueSidebarList();
-  }
-
-  // Limpiar estado
-  draggedIndex = null;
-  dragOverIndex = null;
-}
-
-function handleDragEnd(e) {
-  this.style.opacity = "1";
-  document.querySelectorAll(".queue-item").forEach((el) => el.classList.remove("drag-over"));
-  draggedIndex = null;
-  dragOverIndex = null;
-}
-
-export function renderTrackActiveStylings() {
-  const rows = document.querySelectorAll(".track-row");
-  if (queue.length === 0) return;
-  const activeSong = queue[queueIndex];
-  rows.forEach((row) => {
-    const titleText = row.querySelector(".track-title")?.innerText;
-    if (titleText === activeSong.trackTitle) row.classList.add("active-track");
-    else row.classList.remove("active-track");
-  });
-}
-
+// ============================================================
+// VISTA FAVORITOS (con indicador de YouTube)
+// ============================================================
 export function renderFavoritesDetailView() {
   if (DOM.currentAlbumDetail.cover) {
     DOM.currentAlbumDetail.cover.src = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400";
@@ -361,11 +372,12 @@ export function renderFavoritesDetailView() {
     const activeClass = queue.length > 0 && queue[queueIndex]?.file === song.file ? "active-track" : "";
     const row = document.createElement("div");
     row.className = `track-row ${activeClass}`;
+    const youtubeIcon = isYouTubeSong(song) ? getYouTubeIcon() : "";
     row.innerHTML = `
       <span class="track-number"><i data-lucide="heart" style="color:#ff2d55; width:14px; fill:#ff2d55;"></i></span>
-      <span class="track-title">${escapeHtml(song.trackTitle)}</span>
+      <span class="track-title">${escapeHtml(song.trackTitle)}${youtubeIcon}</span>
       <span class="track-album-inside">${escapeHtml(song.artistName)}</span>
-      <span class="track-duration">--:--</span>
+      <span class="track-duration">${song.duracion_segundos ? formatDuration(song.duracion_segundos) : "--:--"}</span>
       <button class="btn-track-actions"><i data-lucide="more-horizontal"></i></button>
     `;
     row.addEventListener("click", () => {
@@ -383,6 +395,9 @@ export function renderFavoritesDetailView() {
   if (window.lucide) window.lucide.createIcons();
 }
 
+// ============================================================
+// VISTA PLAYLIST DETALLE (con indicador de YouTube)
+// ============================================================
 export function renderPlaylistDetailView(playlistName) {
   const playData = state.playlists[playlistName];
   if (!playData) return;
@@ -405,11 +420,12 @@ export function renderPlaylistDetailView(playlistName) {
     const activeClass = queue.length > 0 && queue[queueIndex]?.file === song.file ? "active-track" : "";
     const row = document.createElement("div");
     row.className = `track-row ${activeClass}`;
+    const youtubeIcon = isYouTubeSong(song) ? getYouTubeIcon() : "";
     row.innerHTML = `
       <span class="track-number">${songIdx + 1}</span>
-      <span class="track-title">${escapeHtml(song.trackTitle)}</span>
+      <span class="track-title">${escapeHtml(song.trackTitle)}${youtubeIcon}</span>
       <span class="track-album-inside">${escapeHtml(song.artistName)}</span>
-      <span class="track-duration">--:--</span>
+      <span class="track-duration">${song.duracion_segundos ? formatDuration(song.duracion_segundos) : "--:--"}</span>
       <button class="btn-track-actions"><i data-lucide="more-horizontal"></i></button>
     `;
     row.addEventListener("click", () => {
@@ -427,6 +443,88 @@ export function renderPlaylistDetailView(playlistName) {
   if (window.lucide) window.lucide.createIcons();
 }
 
+// ============================================================
+// COLA DE REPRODUCCIÓN (con indicador de YouTube)
+// ============================================================
+export function renderQueueSidebarList() {
+  if (!DOM.queue.dynamicList) return;
+  const container = DOM.queue.dynamicList;
+  container.innerHTML = "";
+
+  queue.forEach((song, idx) => {
+    const item = document.createElement("div");
+    item.className = `queue-item ${idx === queueIndex ? "queue-active" : ""}`;
+    item.draggable = true;
+    item.dataset.index = idx;
+
+    const youtubeIcon = isYouTubeSong(song) ? getYouTubeIcon() : "";
+
+    item.innerHTML = `
+      <div class="queue-title">${escapeHtml(song.trackTitle)}${youtubeIcon}</div>
+      <div class="queue-artist">${escapeHtml(song.artistName)}</div>
+    `;
+
+    item.addEventListener("dragstart", handleDragStart);
+    item.addEventListener("dragenter", handleDragEnter);
+    item.addEventListener("dragover", handleDragOver);
+    item.addEventListener("drop", handleDrop);
+    item.addEventListener("dragend", handleDragEnd);
+
+    item.addEventListener("click", () => {
+      setQueue(queue, idx);
+      playActiveSong();
+    });
+
+    container.appendChild(item);
+  });
+}
+
+// ============================================================
+// MANEJADORES DE DRAG & DROP
+// ============================================================
+function handleDragStart(e) {
+  draggedIndex = parseInt(this.dataset.index);
+  this.style.opacity = "0.5";
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/plain", String(draggedIndex));
+}
+
+function handleDragEnter(e) {
+  e.preventDefault();
+  this.classList.add("drag-over");
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  this.classList.remove("drag-over");
+
+  const targetIndex = parseInt(this.dataset.index);
+  const fromIndex = draggedIndex !== null ? draggedIndex : parseInt(e.dataTransfer.getData("text/plain"));
+
+  if (fromIndex !== null && targetIndex !== null && fromIndex !== targetIndex) {
+    reorderQueue(fromIndex, targetIndex);
+    renderQueueSidebarList();
+  }
+
+  draggedIndex = null;
+  dragOverIndex = null;
+}
+
+function handleDragEnd(e) {
+  this.style.opacity = "1";
+  document.querySelectorAll(".queue-item").forEach((el) => el.classList.remove("drag-over"));
+  draggedIndex = null;
+  dragOverIndex = null;
+}
+
+// ============================================================
+// OTRAS FUNCIONES DE RENDERIZADO
+// ============================================================
 function renderPlaylistAddSongInline(playlistName, container) {
   const allSongs = getAllAvailableSongs();
   const playlist = state.playlists[playlistName];
@@ -491,6 +589,43 @@ function renderPlaylistAddSongInline(playlistName, container) {
     });
   }
   if (window.lucide) window.lucide.createIcons();
+}
+
+export function renderTrackActiveStylings() {
+  const rows = document.querySelectorAll(".track-row");
+  if (queue.length === 0) return;
+  const activeSong = queue[queueIndex];
+  rows.forEach((row) => {
+    const titleText = row.querySelector(".track-title")?.innerText;
+    if (titleText === activeSong.trackTitle) row.classList.add("active-track");
+    else row.classList.remove("active-track");
+  });
+}
+
+// ✅ CLOSE ALBUM VIEW - vuelve a Explorar si veníamos de allí
+export function closeAlbumView() {
+  if (state.fromExplore) {
+    showSection("explore");
+    state.fromExplore = false;
+  } else {
+    showSection("home");
+  }
+}
+
+function playNewAlbumQueue(albumIdx, songIdx) {
+  const albums = getAlbums();
+  const album = albums[albumIdx];
+  if (!album) return;
+  setQueue(
+    album.songs.map((song) => ({
+      ...song,
+      artistName: song.artistName || album.artist,
+      albumCover: song.albumCover || album.cover,
+      originalAlbumIdx: albumIdx,
+    })),
+    songIdx,
+  );
+  playActiveSong();
 }
 
 export function addContextSongToQueue() {
@@ -609,16 +744,9 @@ export function updatePlayingUIs(playing) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-function escapeHtml(str) {
-  if (!str) return "";
-  return str.replace(/[&<>]/g, (m) => {
-    if (m === "&") return "&amp;";
-    if (m === "<") return "&lt;";
-    if (m === ">") return "&gt;";
-    return m;
-  });
-}
-
+// ============================================================
+// SIDEBAR MÓVIL
+// ============================================================
 export function initMobileSidebar() {
   const hamburgerBtn = document.getElementById("hamburgerBtn");
   const sidebar = document.getElementById("sidebarLeft");
@@ -667,6 +795,69 @@ export function initMobileSidebar() {
   return { openSidebar, closeSidebar };
 }
 
+// ============================================================
+// EXPORTACIONES ADICIONALES
+// ============================================================
 window.renderPlaylistDetailView = renderPlaylistDetailView;
+export function renderProfileAlbums() {
+  const container = document.getElementById("profileAlbumGrid");
+  if (!container) return;
+  container.innerHTML = "";
 
+  const albums = getAlbums();
+  if (albums.length === 0) {
+    container.innerHTML = `
+            <div style="grid-column:1/-1; padding:40px; text-align:center; color:var(--text-secondary);">
+                <i data-lucide="music" style="width:40px; height:40px; margin-bottom:12px; opacity:0.3; display:block; margin-left:auto; margin-right:auto;"></i>
+                <h4 style="color:var(--text-primary); font-weight:600;">No has añadido ningún álbum</h4>
+                <p style="font-size:0.9rem;">Explora el catálogo y añade álbumes a tu biblioteca</p>
+            </div>
+        `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  albums.forEach((album) => {
+    const card = document.createElement("article");
+    card.className = "album-card";
+    card.innerHTML = `
+            <div class="card-media-wrapper">
+                <div class="card-media">
+                    <img src="${album.cover}" alt="${escapeHtml(album.title)}">
+                    <div class="play-hint"><i data-lucide="play"></i></div>
+                </div>
+                <div class="card-reflection"></div>
+                <span class="grid-card-tag tag-album">Álbum</span>
+            </div>
+            <div class="card-info">
+                <h3>${escapeHtml(album.title)}</h3>
+                <p>${escapeHtml(album.artist)}</p>
+            </div>
+        `;
+
+    card.addEventListener("click", () => {
+      const albumsList = getAlbums();
+      const idx = albumsList.findIndex((a) => a.id_album === album.id_album);
+      if (idx !== -1) {
+        openAlbumView(idx);
+      }
+    });
+
+    const playBtn = card.querySelector(".play-hint");
+    if (playBtn) {
+      playBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const albumsList = getAlbums();
+        const idx = albumsList.findIndex((a) => a.id_album === album.id_album);
+        if (idx !== -1) {
+          playNewAlbumQueue(idx, 0);
+        }
+      });
+    }
+
+    container.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
 export { refreshUI };

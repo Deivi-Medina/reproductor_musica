@@ -19,6 +19,7 @@ import {
   closeAlbumView,
   renderFavoritesDetailView,
   renderPlaylistDetailView,
+  renderProfileAlbums,
   addContextSongToQueue,
   addContextSongToSpecificPlaylist,
   initMobileSidebar,
@@ -45,6 +46,7 @@ import { initTheme } from "./theme.js";
 import { initSettings, openSettings, closeSettings } from "./settings.js";
 import { isCrossfadeEnabled, setCrossfadeEnabled } from "./crossfade.js";
 import { showAlert } from "./modals.js";
+import { initExplore } from "./explore.js";
 
 window.isScrubbing = false;
 
@@ -73,7 +75,9 @@ async function initApp() {
   await initAchievements();
   initTheme();
   initSettings();
+  initExplore();
 
+  // Navegación del sidebar
   if (DOM.sidebar.navHome) {
     DOM.sidebar.navHome.addEventListener("click", () => showSection("home"));
   }
@@ -91,18 +95,19 @@ async function initApp() {
       }, 100);
     });
   }
-  if (DOM.sidebar.navProfile) {
-    DOM.sidebar.navProfile.addEventListener("click", () => {
-      showSection("profile");
-      setTimeout(() => {
-        if (typeof window.loadProfileData === "function") window.loadProfileData();
-      }, 100);
-    });
+  if (DOM.sidebar.navExplore) {
+    DOM.sidebar.navExplore.addEventListener("click", () => showSection("explore"));
   }
   if (DOM.sidebar.navCommunity) {
     DOM.sidebar.navCommunity.addEventListener("click", () => showSection("community"));
   }
 
+  // Botón de perfil en el header
+  if (DOM.header && DOM.header.profileBtn) {
+    DOM.header.profileBtn.addEventListener("click", () => showSection("profile"));
+  }
+
+  // Botón de ajustes en el sidebar
   const settingsSidebarBtn = document.getElementById("btnSettingsSidebar");
   if (settingsSidebarBtn) {
     settingsSidebarBtn.addEventListener("click", () => {
@@ -110,6 +115,7 @@ async function initApp() {
     });
   }
 
+  // Modal de creación de playlist
   if (DOM.sidebar.btnCreatePlaylist) {
     DOM.sidebar.btnCreatePlaylist.addEventListener("click", openPlaylistModal);
   }
@@ -123,6 +129,7 @@ async function initApp() {
     DOM.modal.btnConfirm.addEventListener("click", createPlaylistAction);
   }
 
+  // Menú contextual
   document.addEventListener("click", () => {
     if (DOM.contextMenu.container) DOM.contextMenu.container.classList.add("hidden");
   });
@@ -139,6 +146,7 @@ async function initApp() {
     });
   }
 
+  // Controles de audio (volumen, play, siguiente, anterior, shuffle, repeat, favorito)
   if (DOM.audioControls.volSlider) {
     DOM.audioControls.volSlider.addEventListener("input", (e) => {
       audio.volume = e.target.value / 100;
@@ -166,6 +174,7 @@ async function initApp() {
     DOM.fullPlayer.btnFavorite.addEventListener("click", toggleFavoriteStatus);
   }
 
+  // Crossfade (opcional)
   const crossfadeBtn = document.getElementById("btnCrossfade");
   if (crossfadeBtn) {
     const updateCrossfadeButton = () => {
@@ -187,6 +196,7 @@ async function initApp() {
     updateCrossfadeButton();
   }
 
+  // Botón de ajustes (settings)
   const settingsBtn = document.getElementById("btnSettings");
   if (settingsBtn) {
     settingsBtn.addEventListener("click", () => {
@@ -194,31 +204,18 @@ async function initApp() {
     });
   }
 
-  if (DOM.audioControls.scrubber) {
-    DOM.audioControls.scrubber.addEventListener("pointerdown", () => {
-      window.isScrubbing = true;
-    });
+  // NOTA: El scrubber (barra de progreso) ahora se maneja completamente en audio.js
+  // para que funcione tanto con MP3 como con YouTube, incluso en pausa.
+  // NO agregar listener del scrubber aquí para evitar conflictos.
 
-    DOM.audioControls.scrubber.addEventListener("pointerup", (e) => {
-      window.isScrubbing = false;
-      if (audio.duration && !isNaN(audio.duration)) {
-        audio.currentTime = (parseFloat(e.target.value) / 100) * audio.duration;
-      }
-    });
-
-    DOM.audioControls.scrubber.addEventListener("input", (e) => {
-      if (audio.duration && !isNaN(audio.duration) && window.isScrubbing) {
-        audio.currentTime = (parseFloat(e.target.value) / 100) * audio.duration;
-      }
-    });
-  }
-
+  // Buscador global
   if (DOM.views.searchBar) {
     DOM.views.searchBar.addEventListener("input", (e) => {
       renderAlbumCards(e.target.value);
     });
   }
 
+  // Expansión / minimización del reproductor completo
   window.expandFullPlayer = () => {
     if (DOM.fullPlayer.container) {
       DOM.fullPlayer.container.classList.remove("hidden");
@@ -236,6 +233,7 @@ async function initApp() {
     }
   };
 
+  // Ecualizador
   if (DOM.equalizer.btnToggle && DOM.equalizer.sidebar) {
     DOM.equalizer.btnToggle.addEventListener("click", () => {
       DOM.equalizer.sidebar.classList.toggle("collapsed");
@@ -273,6 +271,7 @@ async function initApp() {
     });
   }
 
+  // Asistente musik (chat)
   if (DOM.musikWidget.btnTrigger && DOM.musikWidget.chatWindow) {
     DOM.musikWidget.btnTrigger.addEventListener("click", () => {
       DOM.musikWidget.chatWindow.classList.toggle("musik-hidden");
@@ -308,6 +307,7 @@ async function initApp() {
     DOM.musikChat.fileInput.addEventListener("change", handleLocalFileImport);
   }
 
+  // Acciones de álbum (editar, eliminar)
   if (DOM.albumActions.btnEdit) {
     DOM.albumActions.btnEdit.addEventListener("click", openEditAlbumModal);
   }
@@ -338,6 +338,7 @@ async function initApp() {
     });
   }
 
+  // Exponer funciones globales
   window.openAlbumView = openAlbumView;
   window.closeAlbumView = closeAlbumView;
   window.renderPlaylistsSidebarLinks = renderPlaylistsSidebarLinks;
@@ -347,6 +348,7 @@ async function initApp() {
   window.openSettings = openSettings;
   window.closeSettings = closeSettings;
 
+  // Inicializar sistema de reseñas
   initReviewsSystem(
     () => (queue.length ? queue[queueIndex] : null),
     () => {
@@ -378,13 +380,18 @@ async function initApp() {
     },
   );
 
+  // Inicializar pestañas de comunidad
   initCommunityTabs();
 
+  // Recargar iconos de Lucide
   if (window.lucide) window.lucide.createIcons();
 
   console.log("Audiophille inicializado correctamente");
 }
 
+// ============================================================
+// CARGAR DATOS DEL PERFIL (con álbumes del usuario)
+// ============================================================
 window.loadProfileData = async function loadProfileData() {
   const avgElement = document.getElementById("statProfileAvgRating");
   if (!avgElement) {
@@ -418,11 +425,17 @@ window.loadProfileData = async function loadProfileData() {
     } else {
       console.error("Error en estadísticas:", stats.message);
     }
+
+    // Renderizar los álbumes del usuario en su perfil
+    renderProfileAlbums();
   } catch (err) {
     console.error("Error cargando perfil:", err);
   }
 };
 
+// ============================================================
+// EVENTOS DEL PERFIL (edición)
+// ============================================================
 function setupProfileEvents() {
   const editBtn = document.getElementById("editProfileBtn");
   const modal = document.getElementById("editProfileModal");
@@ -482,7 +495,9 @@ function setupProfileEvents() {
   });
 }
 
-// Configuración de cierre de perfil público (se asigna globalmente)
+// ============================================================
+// PERFIL PÚBLICO
+// ============================================================
 window.closePublicProfile = () => {
   const container = document.getElementById("publicProfileView");
   if (container) {
@@ -493,6 +508,9 @@ window.closePublicProfile = () => {
 };
 window.openPublicProfile = openPublicProfile;
 
+// ============================================================
+// INICIALIZACIÓN
+// ============================================================
 document.addEventListener("DOMContentLoaded", () => {
   setupProfileEvents();
   initApp();

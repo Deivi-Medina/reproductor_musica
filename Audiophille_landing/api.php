@@ -2,7 +2,6 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// 🔧 CORREGIDO: CORS más flexible para entornos de desarrollo
 $frontend_origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
 header('Access-Control-Allow-Origin: ' . $frontend_origin);
 header('Access-Control-Allow-Credentials: true');
@@ -47,7 +46,6 @@ function sendJson($data)
 
 // ==================== SWITCH PRINCIPAL ====================
 switch ($action) {
-    // ----- FUNCIONES EXISTENTES -----
     case 'get_initial_data':
         getInitialData($pdo, $user_id);
         break;
@@ -121,7 +119,7 @@ switch ($action) {
         getUserStats($pdo, $user_id);
         break;
 
-    // ----- FUNCIONES SOCIALES -----
+    // Social
     case 'get_public_profile':
         getPublicProfile($pdo, $user_id, $_GET);
         break;
@@ -158,11 +156,9 @@ switch ($action) {
     case 'get_achievements':
         getAchievements($pdo, $user_id);
         break;
-
     case 'update_xp':
         updateXp($pdo, $user_id, $_POST);
         break;
-
     case 'unlock_achievement':
         unlockAchievement($pdo, $user_id, $_POST);
         break;
@@ -170,26 +166,65 @@ switch ($action) {
         incrementarPartida($pdo, $user_id);
         break;
 
+    // ========== NUEVOS ENDPOINTS ==========
+    case 'get_public_albums':
+        getPublicAlbums($pdo, $user_id, $_GET);
+        break;
+    case 'add_album_to_library':
+        addAlbumToLibrary($pdo, $user_id, $_POST);
+        break;
+    case 'remove_album_from_library':
+        removeAlbumFromLibrary($pdo, $user_id, $_POST);
+        break;
+    case 'get_youtube_id':
+        getYouTubeId($pdo, $user_id, $_GET);
+        break;
+    // ========== ENDPOINTS PARA EXPLORAR Y PERFIL DE ARTISTA ==========
+    case 'get_public_artists':
+        getPublicArtists($pdo, $user_id, $_GET);
+        break;
+    case 'get_artist_details':
+        getArtistDetails($pdo, $user_id, $_GET);
+        break;
+    case 'get_artist_albums':
+        getArtistAlbums($pdo, $user_id, $_GET);
+        break;
     default:
         sendJson(['success' => false, 'message' => 'Acción no soportada: ' . $action]);
 }
 
 // ============================================================
-// FUNCIONES EXISTENTES (solo se han corregido las indicadas)
+// FUNCIONES
 // ============================================================
 
 function getInitialData($pdo, $user_id)
 {
     try {
+        if (!$user_id) {
+            sendJson([
+                'success' => true,
+                'albumes' => [],
+                'playlists' => [],
+                'favoritos' => [],
+                'reseñas' => [],
+                'eq' => ['bass' => 0, 'vocals' => 0, 'treble' => 0],
+                'importadas' => [],
+                'followed_artists' => [],
+                'user_id' => null
+            ]);
+            return;
+        }
+
         $stmt = $pdo->prepare("
             SELECT a.id_album, a.titulo, a.anio, a.caratula_url, a.genero,
                    ar.nombre_artista as artista
             FROM albumes a
             JOIN artistas ar ON a.id_artista = ar.id_artista
-            WHERE a.es_sistema = 1 OR (a.es_sistema = 0 AND a.id_usuario = ?)
-            ORDER BY a.id_album
+            JOIN usuario_albumes ua ON a.id_album = ua.id_album
+            WHERE ua.id_usuario = ?
+            ORDER BY ua.fecha_agregado DESC, a.titulo
         ");
-        $stmt->execute([$user_id ?: 0]);
+        $stmt->execute([$user_id]);
         $albumes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($albumes as &$album) {
@@ -204,65 +239,57 @@ function getInitialData($pdo, $user_id)
         }
 
         $playlists = [];
-        $favoritos = [];
-        $reseñas = [];
-        $eq = null;
-        $importadas = [];
-        $followed_artists = [];
-
-        if ($user_id) {
-            $stmt = $pdo->prepare("SELECT id_playlist, nombre, portada_url FROM playlists WHERE id_usuario = ?");
-            $stmt->execute([$user_id]);
-            $playlists = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($playlists as &$pl) {
-                $stmt2 = $pdo->prepare("
-                    SELECT c.id_cancion, c.titulo, c.archivo_url, c.duracion_segundos,
-                           COALESCE(ar.nombre_artista, 'Artista') as artista_nombre,
-                           COALESCE(a.caratula_url, '') as album_cover
-                    FROM playlist_canciones pc
-                    JOIN canciones c ON pc.id_cancion = c.id_cancion
-                    LEFT JOIN albumes a ON c.id_album = a.id_album
-                    LEFT JOIN artistas ar ON a.id_artista = ar.id_artista
-                    WHERE pc.id_playlist = ?
-                    ORDER BY pc.orden
-                ");
-                $stmt2->execute([$pl['id_playlist']]);
-                $pl['canciones'] = $stmt2->fetchAll(PDO::FETCH_ASSOC);
-            }
-
-            $stmt = $pdo->prepare("SELECT id_cancion FROM favoritos WHERE id_usuario = ?");
-            $stmt->execute([$user_id]);
-            $favoritos = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-            $stmt = $pdo->prepare("
-                SELECT r.id_review, r.puntuacion, r.comentario, r.fecha, r.escuchada_nuevamente,
-                       r.titulo_cancion_texto, r.artista_texto,
-                       COALESCE(a.caratula_url, '') as albumCover
-                FROM resenas r
-                JOIN canciones c ON r.id_cancion = c.id_cancion
+        $stmt = $pdo->prepare("SELECT id_playlist, nombre, portada_url FROM playlists WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $playlists = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($playlists as &$pl) {
+            $stmt2 = $pdo->prepare("
+                SELECT c.id_cancion, c.titulo, c.archivo_url, c.duracion_segundos,
+                       COALESCE(ar.nombre_artista, 'Artista') as artista_nombre,
+                       COALESCE(a.caratula_url, '') as album_cover
+                FROM playlist_canciones pc
+                JOIN canciones c ON pc.id_cancion = c.id_cancion
                 LEFT JOIN albumes a ON c.id_album = a.id_album
-                WHERE r.id_usuario = ?
-                ORDER BY r.fecha DESC
+                LEFT JOIN artistas ar ON a.id_artista = ar.id_artista
+                WHERE pc.id_playlist = ?
+                ORDER BY pc.orden
             ");
-            $stmt->execute([$user_id]);
-            $reseñas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $stmt = $pdo->prepare("SELECT bass, vocals, treble FROM configuracion_eq WHERE id_usuario = ?");
-            $stmt->execute([$user_id]);
-            $eq = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            $stmt = $pdo->prepare("
-                SELECT id_cancion, titulo, archivo_url, duracion_segundos, genero
-                FROM canciones
-                WHERE es_sistema = 0 AND id_usuario_subio = ?
-            ");
-            $stmt->execute([$user_id]);
-            $importadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $stmt = $pdo->prepare("SELECT nombre_artista FROM artistas_seguidos WHERE id_usuario = ?");
-            $stmt->execute([$user_id]);
-            $followed_artists = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $stmt2->execute([$pl['id_playlist']]);
+            $pl['canciones'] = $stmt2->fetchAll(PDO::FETCH_ASSOC);
         }
+
+        $stmt = $pdo->prepare("SELECT id_cancion FROM favoritos WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $favoritos = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $stmt = $pdo->prepare("
+            SELECT r.id_review, r.puntuacion, r.comentario, r.fecha, r.escuchada_nuevamente,
+                   r.titulo_cancion_texto, r.artista_texto,
+                   COALESCE(a.caratula_url, '') as albumCover
+            FROM resenas r
+            JOIN canciones c ON r.id_cancion = c.id_cancion
+            LEFT JOIN albumes a ON c.id_album = a.id_album
+            WHERE r.id_usuario = ?
+            ORDER BY r.fecha DESC
+        ");
+        $stmt->execute([$user_id]);
+        $reseñas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmt = $pdo->prepare("SELECT bass, vocals, treble FROM configuracion_eq WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $eq = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $pdo->prepare("
+            SELECT id_cancion, titulo, archivo_url, duracion_segundos, genero
+            FROM canciones
+            WHERE es_sistema = 0 AND id_usuario_subio = ?
+        ");
+        $stmt->execute([$user_id]);
+        $importadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmt = $pdo->prepare("SELECT nombre_artista FROM artistas_seguidos WHERE id_usuario = ?");
+        $stmt->execute([$user_id]);
+        $followed_artists = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         sendJson([
             'success' => true,
@@ -279,6 +306,303 @@ function getInitialData($pdo, $user_id)
         sendJson(['success' => false, 'message' => 'Error en getInitialData: ' . $e->getMessage()]);
     }
 }
+
+// ============================================================
+// NUEVOS ENDPOINTS
+// ============================================================
+
+function getPublicAlbums($pdo, $user_id, $data)
+{
+    $page = isset($data['page']) ? (int)$data['page'] : 1;
+    $limit = isset($data['limit']) ? (int)$data['limit'] : 20;
+    $search = isset($data['search']) ? trim($data['search']) : '';
+    $offset = ($page - 1) * $limit;
+
+    $sql = "SELECT a.*, ar.nombre_artista as artista,
+            (SELECT COUNT(*) FROM usuario_albumes WHERE id_usuario = :user_id AND id_album = a.id_album) as added
+            FROM albumes a
+            JOIN artistas ar ON a.id_artista = ar.id_artista
+            WHERE a.es_publico = 1
+            AND a.id_album NOT IN (
+                SELECT id_album FROM usuario_albumes WHERE id_usuario = :user_id_not_in
+            )";
+
+    $params = [
+        ':user_id' => $user_id,
+        ':user_id_not_in' => $user_id
+    ];
+
+    if (!empty($search)) {
+        $sql .= " AND (a.titulo LIKE :search OR ar.nombre_artista LIKE :search_artist)";
+        $searchTerm = '%' . $search . '%';
+        $params[':search'] = $searchTerm;
+        $params[':search_artist'] = $searchTerm;
+    }
+
+    $sql .= " ORDER BY a.titulo ASC LIMIT :limit OFFSET :offset";
+
+    $stmt = $pdo->prepare($sql);
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value);
+    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $albums = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Total count
+    $countSql = "SELECT COUNT(*) FROM albumes a
+                 JOIN artistas ar ON a.id_artista = ar.id_artista
+                 WHERE a.es_publico = 1
+                 AND a.id_album NOT IN (SELECT id_album FROM usuario_albumes WHERE id_usuario = :user_id_count)";
+    $countParams = [':user_id_count' => $user_id];
+    if (!empty($search)) {
+        $countSql .= " AND (a.titulo LIKE :search_count OR ar.nombre_artista LIKE :search_artist_count)";
+        $countParams[':search_count'] = $searchTerm;
+        $countParams[':search_artist_count'] = $searchTerm;
+    }
+    $stmt = $pdo->prepare($countSql);
+    foreach ($countParams as $key => $value) {
+        $stmt->bindValue($key, $value);
+    }
+    $stmt->execute();
+    $total = (int)$stmt->fetchColumn();
+
+    // Get songs for each album
+    foreach ($albums as &$album) {
+        $stmt = $pdo->prepare("SELECT id_cancion, titulo, duracion_segundos, numero_pista
+                               FROM canciones WHERE id_album = :album_id LIMIT 5");
+        $stmt->bindValue(':album_id', $album['id_album'], PDO::PARAM_INT);
+        $stmt->execute();
+        $album['songs'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    sendJson([
+        'success' => true,
+        'albums' => $albums,
+        'total' => $total,
+        'page' => $page,
+        'limit' => $limit
+    ]);
+}
+
+function addAlbumToLibrary($pdo, $user_id, $data)
+{
+    $id_album = isset($data['id_album']) ? (int)$data['id_album'] : 0;
+    if (!$id_album) {
+        sendJson(['success' => false, 'message' => 'ID de álbum requerido']);
+        return;
+    }
+
+    $stmt = $pdo->prepare("SELECT id_album, es_publico, id_usuario FROM albumes WHERE id_album = ?");
+    $stmt->execute([$id_album]);
+    $album = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$album) {
+        sendJson(['success' => false, 'message' => 'Álbum no encontrado']);
+        return;
+    }
+    if ($album['es_publico'] == 0 && $album['id_usuario'] != $user_id) {
+        sendJson(['success' => false, 'message' => 'No tienes permiso para añadir este álbum']);
+        return;
+    }
+
+    $stmt = $pdo->prepare("SELECT 1 FROM usuario_albumes WHERE id_usuario = ? AND id_album = ?");
+    $stmt->execute([$user_id, $id_album]);
+    if ($stmt->fetchColumn()) {
+        sendJson(['success' => false, 'message' => 'Este álbum ya está en tu biblioteca']);
+        return;
+    }
+
+    $stmt = $pdo->prepare("INSERT INTO usuario_albumes (id_usuario, id_album) VALUES (?, ?)");
+    $stmt->execute([$user_id, $id_album]);
+    sendJson(['success' => true, 'message' => 'Álbum añadido a tu biblioteca']);
+}
+
+function removeAlbumFromLibrary($pdo, $user_id, $data)
+{
+    $id_album = isset($data['id_album']) ? (int)$data['id_album'] : 0;
+    if (!$id_album) {
+        sendJson(['success' => false, 'message' => 'ID de álbum requerido']);
+        return;
+    }
+
+    $stmt = $pdo->prepare("SELECT 1 FROM usuario_albumes WHERE id_usuario = ? AND id_album = ?");
+    $stmt->execute([$user_id, $id_album]);
+    if (!$stmt->fetchColumn()) {
+        sendJson(['success' => false, 'message' => 'Este álbum no está en tu biblioteca']);
+        return;
+    }
+
+    $stmt = $pdo->prepare("DELETE FROM usuario_albumes WHERE id_usuario = ? AND id_album = ?");
+    $stmt->execute([$user_id, $id_album]);
+    sendJson(['success' => true, 'message' => 'Álbum eliminado de tu biblioteca']);
+}
+
+// ============================================================
+// getYouTubeId MEJORADO (manejo de errores y clave API)
+// ============================================================
+function getYouTubeId($pdo, $user_id, $data)
+{
+    $idCancion = isset($data['id_cancion']) ? (int)$data['id_cancion'] : 0;
+    if (!$idCancion) {
+        sendJson(['success' => false, 'message' => 'ID de canción requerido']);
+        return;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT c.titulo, ar.nombre_artista as artista
+        FROM canciones c
+        JOIN albumes a ON c.id_album = a.id_album
+        JOIN artistas ar ON a.id_artista = ar.id_artista
+        WHERE c.id_cancion = ?
+    ");
+    $stmt->execute([$idCancion]);
+    $song = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$song) {
+        sendJson(['success' => false, 'message' => 'Canción no encontrada']);
+        return;
+    }
+
+    $hashBusqueda = md5(strtolower(trim($song['artista'])) . " - " . strtolower(trim($song['titulo'])));
+
+    // Verificar caché
+    $stmt = $pdo->prepare("SELECT youtube_id FROM youtube_global_cache WHERE hash_busqueda = ?");
+    $stmt->execute([$hashBusqueda]);
+    $cached = $stmt->fetchColumn();
+    if ($cached) {
+        sendJson(['success' => true, 'youtube_id' => $cached]);
+        return;
+    }
+
+    // Verificar si la clave API está configurada (mejor usar define en config)
+    // Si usas constante, asegúrate de definirla en config/database.php
+    $apiKey = 'AIzaSyBkqgcFmJ0AdYGyiI9v-9SoGVITKvcu3RE';
+    // Si no hay clave, devolver error específico
+    if (empty($apiKey) || $apiKey === 'DSADASDA') {
+        sendJson(['success' => false, 'message' => 'Clave API de YouTube no configurada', 'code' => 'NO_API_KEY']);
+        return;
+    }
+
+    $query = $song['artista'] . " " . $song['titulo'] . " audio";
+    $url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" . urlencode($query) . "&type=video&maxResults=1&key=" . $apiKey;
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false || $httpCode !== 200) {
+        sendJson(['success' => false, 'message' => 'Error al conectar con YouTube', 'code' => 'YOUTUBE_ERROR']);
+        return;
+    }
+
+    $data = json_decode($response, true);
+    if (!isset($data['items'][0]['id']['videoId'])) {
+        sendJson(['success' => false, 'message' => 'No se encontró la canción en YouTube', 'code' => 'NOT_FOUND']);
+        return;
+    }
+
+    $youtubeId = $data['items'][0]['id']['videoId'];
+
+    // Guardar en caché
+    $stmt = $pdo->prepare("INSERT INTO youtube_global_cache (hash_busqueda, youtube_id) VALUES (?, ?)");
+    $stmt->execute([$hashBusqueda, $youtubeId]);
+
+    // Actualizar canción
+    $stmt = $pdo->prepare("UPDATE canciones SET archivo_url = ? WHERE id_cancion = ?");
+    $stmt->execute(['youtube:' . $youtubeId, $idCancion]);
+
+    sendJson(['success' => true, 'youtube_id' => $youtubeId]);
+}
+
+// ============================================================
+// NUEVOS ENDPOINTS PARA EXPLORAR Y PERFIL DE ARTISTA
+// ============================================================
+
+/**
+ * Obtiene artistas públicos (con imagen) para el carrusel de Explorar
+ */
+function getPublicArtists($pdo, $user_id, $data)
+{
+    $limit = isset($data['limit']) ? (int)$data['limit'] : 20;
+    $search = isset($data['search']) ? trim($data['search']) : '';
+
+    // Verificar si la tabla artistas_seguidos existe
+    try {
+        $pdo->query("SELECT 1 FROM artistas_seguidos LIMIT 1");
+        $tableExists = true;
+    } catch (PDOException $e) {
+        $tableExists = false;
+    }
+
+    // Construir la consulta según si la tabla existe
+    if ($tableExists) {
+        $sql = "SELECT a.id_artista, a.nombre_artista, a.imagen_url,
+                (SELECT COUNT(*) FROM artistas_seguidos WHERE id_usuario = ? AND nombre_artista = a.nombre_artista) as is_following
+                FROM artistas a
+                WHERE a.imagen_url IS NOT NULL AND a.imagen_url != ''";
+        $params = [$user_id];
+    } else {
+        $sql = "SELECT a.id_artista, a.nombre_artista, a.imagen_url, 0 as is_following
+                FROM artistas a
+                WHERE a.imagen_url IS NOT NULL AND a.imagen_url != ''";
+        $params = [];
+    }
+
+    if (!empty($search)) {
+        $sql .= " AND a.nombre_artista LIKE ?";
+        $params[] = '%' . $search . '%';
+    }
+
+    $sql .= " ORDER BY a.nombre_artista LIMIT ?";
+    $params[] = $limit;
+
+    $stmt = $pdo->prepare($sql);
+
+    // Bindear parámetros con tipos correctos
+    foreach ($params as $index => $value) {
+        // El último parámetro es LIMIT, debe ser entero
+        if ($index === array_key_last($params)) {
+            $stmt->bindValue($index + 1, $value, PDO::PARAM_INT);
+        } else {
+            $stmt->bindValue($index + 1, $value);
+        }
+    }
+
+    $stmt->execute();
+    $artists = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    sendJson(['success' => true, 'artists' => $artists]);
+}
+/**
+ * Obtiene detalles de un artista (para el perfil del artista)
+ */
+function getArtistDetails($pdo, $user_id, $data)
+{
+    $artistName = isset($data['name']) ? trim($data['name']) : '';
+    if (!$artistName) {
+        sendJson(['success' => false, 'message' => 'Nombre de artista requerido']);
+        return;
+    }
+
+    $stmt = $pdo->prepare("SELECT id_artista, nombre_artista, imagen_url, biografia, pais FROM artistas WHERE nombre_artista = ?");
+    $stmt->execute([$artistName]);
+    $artist = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$artist) {
+        sendJson(['success' => false, 'message' => 'Artista no encontrado']);
+        return;
+    }
+
+    sendJson(['success' => true, 'artist' => $artist]);
+}
+
+// ============================================================
+// FUNCIONES EXISTENTES (sin cambios)
+// ============================================================
 
 function createPlaylist($pdo, $user_id, $data, $files)
 {
@@ -321,7 +645,6 @@ function addToPlaylist($pdo, $user_id, $data)
     sendJson(['success' => true]);
 }
 
-// 🔧 CORREGIDO: Ahora verifica que la playlist pertenezca al usuario
 function removeFromPlaylist($pdo, $user_id, $data)
 {
     $id_playlist = $data['id_playlist'] ?? 0;
@@ -330,7 +653,6 @@ function removeFromPlaylist($pdo, $user_id, $data)
         sendJson(['success' => false, 'message' => 'Datos incompletos']);
         return;
     }
-    // Verificar propiedad
     $stmt = $pdo->prepare("SELECT id_usuario FROM playlists WHERE id_playlist = ?");
     $stmt->execute([$id_playlist]);
     if ($stmt->fetchColumn() != $user_id) {
@@ -458,7 +780,6 @@ function saveReview($pdo, $user_id, $data)
     ]);
 
     $id_review = $pdo->lastInsertId();
-
     $nombre_usuario = obtenerNombreUsuario($pdo, $user_id);
     $descripcion = "$nombre_usuario reseñó '$titulo_texto' de $artista_texto ⭐ $puntuacion/5";
     registrarActividad($pdo, $user_id, 'reseña', $id_review, $descripcion);
@@ -583,12 +904,11 @@ function registerPlay($pdo, $user_id, $data)
         return;
     }
 
-    // Obtener estadísticas y verificar logros
     $stats = getUserStatsArray($pdo, $user_id);
     $unlocked = checkAndUnlockAchievements($pdo, $user_id, $stats);
-
     sendJson(['success' => true, 'unlocked' => $unlocked]);
 }
+
 function getTopArtist($pdo, $user_id)
 {
     try {
@@ -705,13 +1025,11 @@ function createAlbum($pdo, $user_id, $data, $files)
     }
 }
 
-// 🔧 CORREGIDO: Ahora verifica que el álbum pertenezca al usuario (si no es sistema)
 function updateAlbum($pdo, $user_id, $data, $files)
 {
     $idAlbum = $data['id_album'] ?? 0;
     if (!$idAlbum) sendJson(['success' => false, 'message' => 'ID de álbum requerido']);
 
-    // Verificar propiedad y estado del sistema
     $stmt = $pdo->prepare("SELECT es_sistema, id_usuario FROM albumes WHERE id_album = ?");
     $stmt->execute([$idAlbum]);
     $album = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -786,13 +1104,11 @@ function updateAlbum($pdo, $user_id, $data, $files)
     sendJson(['success' => true]);
 }
 
-// 🔧 CORREGIDO: Ahora verifica que el álbum pertenezca al usuario (si no es sistema)
 function deleteAlbum($pdo, $user_id, $data)
 {
     $idAlbum = $data['id_album'] ?? 0;
     if (!$idAlbum) sendJson(['success' => false, 'message' => 'ID de álbum requerido']);
 
-    // Verificar propiedad y estado del sistema
     $stmt = $pdo->prepare("SELECT es_sistema, id_usuario FROM albumes WHERE id_album = ?");
     $stmt->execute([$idAlbum]);
     $album = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -915,7 +1231,7 @@ function getUserStats($pdo, $user_id)
 }
 
 // ============================================================
-// FUNCIONES SOCIALES (sin cambios)
+// FUNCIONES SOCIALES
 // ============================================================
 
 function getPublicProfile($pdo, $current_user_id, $data)
@@ -1072,7 +1388,6 @@ function getFollowers($pdo, $user_id, $data)
     ");
     $stmt->execute([$target_user_id]);
     $followers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
     sendJson(['success' => true, 'followers' => $followers]);
 }
 
@@ -1089,7 +1404,6 @@ function getFollowing($pdo, $user_id, $data)
     ");
     $stmt->execute([$target_user_id]);
     $following = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
     sendJson(['success' => true, 'following' => $following]);
 }
 
@@ -1257,10 +1571,6 @@ function addPlaylistToLibrary($pdo, $user_id, $data)
     sendJson(['success' => true, 'id_playlist' => $nuevo_id, 'nombre' => $nuevo_nombre]);
 }
 
-// ============================================================
-// FUNCIÓN MERGE PLAYLISTS (sin cambios)
-// ============================================================
-
 function mergePlaylists($pdo, $user_id, $data)
 {
     $friend_id = $data['friend_id'] ?? 0;
@@ -1268,7 +1578,6 @@ function mergePlaylists($pdo, $user_id, $data)
         sendJson(['success' => false, 'message' => 'ID de amigo requerido']);
     }
 
-    // 1. Verificar que son amigos mutuos
     $stmt = $pdo->prepare("
         SELECT 1 FROM seguidores s1
         JOIN seguidores s2 ON s1.id_usuario = s2.id_seguido AND s1.id_seguido = s2.id_usuario
@@ -1279,7 +1588,6 @@ function mergePlaylists($pdo, $user_id, $data)
         sendJson(['success' => false, 'message' => 'Deben ser amigos mutuos para fusionar playlists']);
     }
 
-    // 2. Obtener nombres
     $stmt = $pdo->prepare("SELECT nombre_usuario FROM usuarios WHERE id_usuario = ?");
     $stmt->execute([$user_id]);
     $mi_nombre = $stmt->fetchColumn();
@@ -1288,16 +1596,11 @@ function mergePlaylists($pdo, $user_id, $data)
 
     $nombre_playlist = "Fusión: " . $mi_nombre . " + " . $friend_name;
 
-    // 3. Verificar si el usuario actual YA TIENE la playlist fusionada
     $stmt = $pdo->prepare("SELECT id_playlist FROM playlists WHERE id_usuario = ? AND nombre = ?");
     $stmt->execute([$user_id, $nombre_playlist]);
     if ($stmt->fetchColumn()) {
         sendJson(['success' => false, 'message' => "Ya tienes una playlist fusionada con {$friend_name}"]);
     }
-
-    // ============================================================
-    //  CONTAR CANCIONES DE AMBOS
-    // ============================================================
 
     $stmt = $pdo->prepare("
         SELECT COUNT(DISTINCT c.id_cancion) as total
@@ -1311,10 +1614,6 @@ function mergePlaylists($pdo, $user_id, $data)
     $stmt->execute([$friend_id, $friend_id]);
     $amigo_total = (int)$stmt->fetchColumn();
 
-    // ===========================================================
-    // CASO 1: AMBOS SON NUEVOS → NO PERMITIR
-    // ============================================================
-
     if ($mis_total === 0 && $amigo_total === 0) {
         sendJson([
             'success' => false,
@@ -1324,18 +1623,10 @@ function mergePlaylists($pdo, $user_id, $data)
         return;
     }
 
-    // ============================================================
-    // CASO 2: UNO ES NUEVO → PERMITIR CON ADVERTENCIA
-    // ============================================================
-
     $warning = false;
     if ($mis_total === 0 || $amigo_total === 0) {
         $warning = true;
     }
-
-    // ============================================================
-    // OBTENER CANCIONES DE AMBOS (incluyendo del sistema)
-    // ============================================================
 
     $stmt = $pdo->prepare("
         SELECT DISTINCT c.id_cancion, c.titulo, c.genero, 
@@ -1351,10 +1642,6 @@ function mergePlaylists($pdo, $user_id, $data)
 
     $stmt->execute([$friend_id, $friend_id]);
     $amigo_canciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // ============================================================
-    // COMBINAR CANCIONES (evitar duplicados)
-    // ============================================================
 
     $todas_las_canciones = [];
     $ids_vistos = [];
@@ -1376,15 +1663,9 @@ function mergePlaylists($pdo, $user_id, $data)
     $total_canciones_disponibles = count($todas_las_canciones);
     $total_seleccionadas = [];
 
-    // ============================================================
-    // ALGORITMO DE SELECCIÓN
-    // ============================================================
-
-    // Si hay menos de 30 canciones, tomar TODAS las que haya
     if ($total_canciones_disponibles <= 30) {
         $total_seleccionadas = array_column($todas_las_canciones, 'id_cancion');
 
-        // Si hay menos de 5, buscar más del sistema
         if ($total_canciones_disponibles < 5 && !empty($total_seleccionadas)) {
             $placeholders = implode(',', array_fill(0, count($total_seleccionadas), '?'));
             $stmt = $pdo->prepare("
@@ -1400,8 +1681,6 @@ function mergePlaylists($pdo, $user_id, $data)
             $total_seleccionadas = array_merge($total_seleccionadas, $adicionales);
         }
     } else {
-        // Hay más de 30 canciones → APLICAR ALGORITMO COMPLETO
-
         // 1. Canciones en común (40%)
         $mis_ids = array_column($mis_canciones, 'id_cancion');
         $amigo_ids = array_column($amigo_canciones, 'id_cancion');
@@ -1496,16 +1775,11 @@ function mergePlaylists($pdo, $user_id, $data)
         }
     }
 
-    // ============================================================
-    // VERIFICAR SI EL AMIGO YA TIENE LA PLAYLIST
-    // ============================================================
-
     $stmt = $pdo->prepare("SELECT id_playlist, portada_url FROM playlists WHERE id_usuario = ? AND nombre = ?");
     $stmt->execute([$friend_id, $nombre_playlist]);
     $friend_playlist = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($friend_playlist) {
-        // Copiar la playlist del amigo
         $stmt = $pdo->prepare("INSERT INTO playlists (nombre, id_usuario, portada_url) VALUES (?, ?, ?)");
         $stmt->execute([$nombre_playlist, $user_id, $friend_playlist['portada_url']]);
         $nuevo_id_user = $pdo->lastInsertId();
@@ -1532,10 +1806,6 @@ function mergePlaylists($pdo, $user_id, $data)
         return;
     }
 
-    // ============================================================
-    // CREAR PLAYLIST PARA AMBOS USUARIOS
-    // ============================================================
-
     $portada = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400';
 
     $stmt = $pdo->prepare("INSERT INTO playlists (nombre, id_usuario, portada_url) VALUES (?, ?, ?)");
@@ -1546,14 +1816,12 @@ function mergePlaylists($pdo, $user_id, $data)
     $stmt->execute([$nombre_playlist, $friend_id, $portada]);
     $nuevo_id_friend = $pdo->lastInsertId();
 
-    // Insertar canciones en ambas playlists
     foreach ($total_seleccionadas as $idx => $id_cancion) {
         $stmt = $pdo->prepare("INSERT INTO playlist_canciones (id_playlist, id_cancion, orden) VALUES (?, ?, ?)");
         $stmt->execute([$nuevo_id_user, $id_cancion, $idx]);
         $stmt->execute([$nuevo_id_friend, $id_cancion, $idx]);
     }
 
-    // Registrar actividad
     registrarActividad($pdo, $user_id, 'playlist_creada', $nuevo_id_user, "creó la playlist fusionada '$nombre_playlist' con $friend_name");
     registrarActividad($pdo, $friend_id, 'playlist_creada', $nuevo_id_friend, "creó la playlist fusionada '$nombre_playlist' con $mi_nombre");
 
@@ -1599,46 +1867,6 @@ function isFollowing($pdo, $user_id, $data)
     sendJson(['success' => true, 'is_following' => $is_following]);
 }
 
-// ============================================================
-// FUNCIONES AUXILIARES SOCIALES
-// ============================================================
-
-function obtenerNombreUsuario($pdo, $user_id)
-{
-    $stmt = $pdo->prepare("SELECT nombre_usuario FROM usuarios WHERE id_usuario = ?");
-    $stmt->execute([$user_id]);
-    return $stmt->fetchColumn() ?: 'Usuario';
-}
-
-function registrarActividad($pdo, $user_id, $tipo, $id_referencia, $descripcion)
-{
-    try {
-        $stmt = $pdo->prepare("INSERT INTO actividad_social (id_usuario, tipo_actividad, id_referencia, descripcion) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$user_id, $tipo, $id_referencia, $descripcion]);
-    } catch (PDOException $e) {
-        // Si la tabla no existe, crearla
-        if (strpos($e->getMessage(), 'Table') !== false) {
-            $pdo->exec("
-                CREATE TABLE IF NOT EXISTS actividad_social (
-                    id_actividad INT PRIMARY KEY AUTO_INCREMENT,
-                    id_usuario INT NOT NULL,
-                    tipo_actividad VARCHAR(50) NOT NULL,
-                    id_referencia INT,
-                    descripcion TEXT,
-                    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
-                    INDEX idx_usuario (id_usuario),
-                    INDEX idx_tipo (tipo_actividad),
-                    INDEX idx_fecha (fecha)
-                )
-            ");
-            // Reintentar
-            $stmt = $pdo->prepare("INSERT INTO actividad_social (id_usuario, tipo_actividad, id_referencia, descripcion) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$user_id, $tipo, $id_referencia, $descripcion]);
-        }
-    }
-}
-
 function checkMergedPlaylist($pdo, $user_id, $data)
 {
     $friend_id = $data['friend_id'] ?? 0;
@@ -1660,6 +1888,10 @@ function checkMergedPlaylist($pdo, $user_id, $data)
 
     sendJson(['success' => true, 'exists' => $exists]);
 }
+
+// ============================================================
+// FUNCIONES DE LOGROS Y PROGRESO
+// ============================================================
 
 function getAchievements($pdo, $user_id)
 {
@@ -1940,9 +2172,85 @@ function incrementarPartida($pdo, $user_id)
     $stmt = $pdo->prepare("UPDATE progreso_usuario SET partidas_jugadas = partidas_jugadas + 1 WHERE id_usuario = ?");
     $stmt->execute([$user_id]);
 
-    // Verificar logros después de incrementar
     $stats = getUserStatsArray($pdo, $user_id);
     $unlocked = checkAndUnlockAchievements($pdo, $user_id, $stats);
 
     sendJson(['success' => true, 'unlocked' => $unlocked]);
+}
+
+// ============================================================
+// FUNCIONES AUXILIARES
+// ============================================================
+
+function obtenerNombreUsuario($pdo, $user_id)
+{
+    $stmt = $pdo->prepare("SELECT nombre_usuario FROM usuarios WHERE id_usuario = ?");
+    $stmt->execute([$user_id]);
+    return $stmt->fetchColumn() ?: 'Usuario';
+}
+
+function registrarActividad($pdo, $user_id, $tipo, $id_referencia, $descripcion)
+{
+    try {
+        $stmt = $pdo->prepare("INSERT INTO actividad_social (id_usuario, tipo_actividad, id_referencia, descripcion) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$user_id, $tipo, $id_referencia, $descripcion]);
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), 'Table') !== false) {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS actividad_social (
+                    id_actividad INT PRIMARY KEY AUTO_INCREMENT,
+                    id_usuario INT NOT NULL,
+                    tipo_actividad VARCHAR(50) NOT NULL,
+                    id_referencia INT,
+                    descripcion TEXT,
+                    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+                    INDEX idx_usuario (id_usuario),
+                    INDEX idx_tipo (tipo_actividad),
+                    INDEX idx_fecha (fecha)
+                )
+            ");
+            $stmt = $pdo->prepare("INSERT INTO actividad_social (id_usuario, tipo_actividad, id_referencia, descripcion) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$user_id, $tipo, $id_referencia, $descripcion]);
+        }
+    }
+}
+
+function getArtistAlbums($pdo, $user_id, $data)
+{
+    $artistName = isset($data['artist']) ? trim($data['artist']) : '';
+    if (!$artistName) {
+        sendJson(['success' => false, 'message' => 'Nombre de artista requerido']);
+        return;
+    }
+
+    // Obtener el ID del artista
+    $stmt = $pdo->prepare("SELECT id_artista FROM artistas WHERE nombre_artista = ?");
+    $stmt->execute([$artistName]);
+    $artistId = $stmt->fetchColumn();
+    if (!$artistId) {
+        sendJson(['success' => false, 'message' => 'Artista no encontrado']);
+        return;
+    }
+
+    // Obtener todos los álbumes del artista (públicos y del sistema)
+    $sql = "SELECT a.id_album, a.titulo, a.anio, a.caratula_url, a.genero, a.es_sistema, a.id_usuario,
+            (SELECT COUNT(*) FROM usuario_albumes WHERE id_usuario = ? AND id_album = a.id_album) as added
+            FROM albumes a
+            WHERE a.id_artista = ? AND a.es_publico = 1
+            ORDER BY a.titulo";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$user_id, $artistId]);
+    $albums = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Obtener canciones de cada álbum
+    foreach ($albums as &$album) {
+        $stmt = $pdo->prepare("SELECT id_cancion, titulo, duracion_segundos, numero_pista
+                               FROM canciones WHERE id_album = ? ORDER BY numero_pista");
+        $stmt->execute([$album['id_album']]);
+        $album['songs'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    sendJson(['success' => true, 'albums' => $albums, 'artist_id' => $artistId]);
 }

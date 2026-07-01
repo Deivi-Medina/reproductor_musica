@@ -84,17 +84,19 @@ class Database
             `caratula_url` varchar(255) NOT NULL DEFAULT '',
             `genero` varchar(50) DEFAULT NULL,
             `es_sistema` tinyint(1) DEFAULT '1',
+            `es_publico` tinyint(1) DEFAULT '1',
             `id_usuario` int DEFAULT NULL,
             PRIMARY KEY (`id_album`),
             KEY `id_artista` (`id_artista`),
             CONSTRAINT `albumes_ibfk_1` FOREIGN KEY (`id_artista`) REFERENCES `artistas` (`id_artista`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
+        // 🔧 CORREGIDO: archivo_url ahora permite NULL para lazy loading de YouTube
         $sqls[] = "CREATE TABLE IF NOT EXISTS `canciones` (
             `id_cancion` int NOT NULL AUTO_INCREMENT,
             `titulo` varchar(100) NOT NULL,
             `id_album` int DEFAULT NULL,
-            `archivo_url` varchar(255) NOT NULL,
+            `archivo_url` varchar(255) DEFAULT NULL,
             `duracion_segundos` int DEFAULT NULL,
             `numero_pista` int DEFAULT NULL,
             `genero` varchar(50) DEFAULT NULL,
@@ -284,8 +286,46 @@ class Database
             CONSTRAINT `logros_usuario_ibfk_2` FOREIGN KEY (`id_logro`) REFERENCES `logros` (`id_logro`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
 
+        // ============================================================
+        // NUEVAS TABLAS PARA EL CATÁLOGO GLOBAL
+        // ============================================================
+
+        $sqls[] = "CREATE TABLE IF NOT EXISTS `usuario_albumes` (
+            `id_usuario` int NOT NULL,
+            `id_album` int NOT NULL,
+            `fecha_agregado` datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id_usuario`, `id_album`),
+            KEY `idx_usuario_busqueda` (`id_usuario`),
+            KEY `idx_album_usuario` (`id_album`),
+            CONSTRAINT `usuario_albumes_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE,
+            CONSTRAINT `usuario_albumes_ibfk_2` FOREIGN KEY (`id_album`) REFERENCES `albumes` (`id_album`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
+
+        $sqls[] = "CREATE TABLE IF NOT EXISTS `youtube_global_cache` (
+            `hash_busqueda` char(32) NOT NULL,
+            `youtube_id` varchar(20) NOT NULL,
+            `fecha_actualizacion` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`hash_busqueda`),
+            KEY `idx_youtube_id` (`youtube_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci";
+
+        // Ejecutar todas las sentencias
         foreach ($sqls as $sql) {
             $this->conn->exec($sql);
+        }
+
+        // Si la tabla `albumes` ya existía y no tenía `es_publico`, se agrega (compatibilidad)
+        try {
+            $this->conn->exec("ALTER TABLE `albumes` ADD COLUMN IF NOT EXISTS `es_publico` TINYINT(1) DEFAULT 1");
+        } catch (PDOException $e) {
+            // Columna ya existe
+        }
+
+        // Si la tabla `canciones` tiene `archivo_url` como NOT NULL, se cambia a NULL (compatibilidad)
+        try {
+            $this->conn->exec("ALTER TABLE `canciones` MODIFY `archivo_url` VARCHAR(255) NULL");
+        } catch (PDOException $e) {
+            // Ya es NULL o no se pudo modificar
         }
 
         $this->insertInitialData();
@@ -322,13 +362,13 @@ class Database
         }
 
         $albums = [
-            ['A Hard Day\'s Night', $artists['The Beatles'], 1964, 'https://i.ytimg.com/vi/5en2JMLA8Z0/maxresdefault.jpg', 'Rock \'n\' Roll'],
-            ['The Dark Side of the Moon', $artists['Pink Floyd'], 1973, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpKDuWTcpap2UJCkmnVBhDJwuh2y3aD-6iPrS6nohjKOUaivKLf7mB9zU&s=10', 'Progressive Rock'],
-            ['Teselia', $artists['suei'], 2020, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSshQdcG--1OpDBbvgkGDbICgjP2pIeMGhQ7g&s', 'Soundtrack / VGM'],
-            ['Thriller', $artists['Michael Jackson'], 1982, 'https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png', 'Pop / R&B']
+            ['A Hard Day\'s Night', $artists['The Beatles'], 1964, 'https://i.ytimg.com/vi/5en2JMLA8Z0/maxresdefault.jpg', 'Rock \'n\' Roll', 1, 1],
+            ['The Dark Side of the Moon', $artists['Pink Floyd'], 1973, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpKDuWTcpap2UJCkmnVBhDJwuh2y3aD-6iPrS6nohjKOUaivKLf7mB9zU&s=10', 'Progressive Rock', 1, 1],
+            ['Teselia', $artists['suei'], 2020, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSshQdcG--1OpDBbvgkGDbICgjP2pIeMGhQ7g&s', 'Soundtrack / VGM', 1, 1],
+            ['Thriller', $artists['Michael Jackson'], 1982, 'https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png', 'Pop / R&B', 1, 1]
         ];
 
-        $stmt = $this->conn->prepare("INSERT INTO albumes (titulo, id_artista, anio, caratula_url, genero, es_sistema) VALUES (?, ?, ?, ?, ?, 1)");
+        $stmt = $this->conn->prepare("INSERT INTO albumes (titulo, id_artista, anio, caratula_url, genero, es_sistema, es_publico) VALUES (?, ?, ?, ?, ?, ?, ?)");
         foreach ($albums as $album) {
             $stmt->execute($album);
         }
@@ -385,7 +425,7 @@ class Database
             ['first_play', 'Primera escucha', 'Reproduce tu primera canción', '🎵', 'comun', 10, 'plays', 1],
             ['first_review', 'Primer crítico', 'Escribe tu primera reseña', '✍️', 'comun', 10, 'reviews', 1],
             ['first_playlist', 'Creador', 'Crea tu primera playlist', '📁', 'comun', 10, 'playlists', 1],
-            ['gamer', 'Jugador', 'Juega tu primera partida', '🎮', 'comun', 10, 'games', 1],
+            ['gamer', 'Jugador', 'Juega tu primera partida', '🎮', 'comun', 10, 'partidas_jugadas', 1],
             ['collector', 'Coleccionista', 'Tienes 50 canciones en tu biblioteca', '📀', 'raro', 20, 'songs', 50],
             ['curator', 'Curador', 'Crea 10 playlists', '🎨', 'raro', 30, 'playlists', 10],
             ['social', 'Sociable', 'Tienes 5 seguidores', '👥', 'raro', 15, 'followers', 5],
